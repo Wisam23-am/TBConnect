@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
-import '../../pages/role_selection_page.dart';
+import '../../features/auth/presentation/portal_role_screen.dart';
 import 'add_patient_page.dart';
 import 'patient_qr_page.dart';
 
@@ -34,7 +34,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
       final doctorId = _supabase.auth.currentUser!.id;
       final patients = await _supabase
           .from('patients')
-          .select('id, full_name, age, gender, qr_code, is_activated, status, treatment_start_date')
+          .select(
+              'id, full_name, age, gender, qr_code, is_activated, status, treatment_start_date')
           .eq('doctor_id', doctorId)
           .order('created_at', ascending: false);
 
@@ -55,20 +56,24 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Logout', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: Text('Logout',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         content: Text('Yakin ingin keluar?', style: GoogleFonts.poppins()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Batal', style: GoogleFonts.poppins(color: const Color(0xFF5A8DA0))),
+            child: Text('Batal',
+                style: GoogleFonts.poppins(color: const Color(0xFF5A8DA0))),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
-            child: Text('Logout', style: GoogleFonts.poppins(color: Colors.white)),
+            child:
+                Text('Logout', style: GoogleFonts.poppins(color: Colors.white)),
           ),
         ],
       ),
@@ -79,7 +84,7 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const RoleSelectionPage()),
+          MaterialPageRoute(builder: (_) => const PortalRoleScreen()),
           (route) => false,
         );
       }
@@ -92,7 +97,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
       backgroundColor: const Color(0xFFE8F4F8),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFF1A6B8A)))
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF1A6B8A)))
             : RefreshIndicator(
                 onRefresh: _loadData,
                 color: const Color(0xFF1A6B8A),
@@ -136,7 +142,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
                         ? SliverToBoxAdapter(child: _buildEmptyState())
                         : SliverList(
                             delegate: SliverChildBuilderDelegate(
-                              (ctx, index) => _buildPatientCard(_patients[index]),
+                              (ctx, index) =>
+                                  _buildPatientCard(_patients[index]),
                               childCount: _patients.length,
                             ),
                           ),
@@ -157,7 +164,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
         backgroundColor: const Color(0xFF1A6B8A),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.person_add_rounded),
-        label: Text('Tambah Pasien', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        label: Text('Tambah Pasien',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -176,7 +184,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
               children: [
                 Text(
                   'Halo, 👋',
-                  style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF5A8DA0)),
+                  style: GoogleFonts.poppins(
+                      fontSize: 14, color: const Color(0xFF5A8DA0)),
                 ),
                 Text(
                   name,
@@ -190,7 +199,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
                 if (hospital != '-')
                   Text(
                     hospital,
-                    style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF5A8DA0)),
+                    style: GoogleFonts.poppins(
+                        fontSize: 12, color: const Color(0xFF5A8DA0)),
                   ),
               ],
             ),
@@ -204,7 +214,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFD8EDF4)),
               ),
-              child: const Icon(Icons.logout_rounded, color: Color(0xFF1A6B8A), size: 22),
+              child: const Icon(Icons.logout_rounded,
+                  color: Color(0xFF1A6B8A), size: 22),
             ),
           ),
         ],
@@ -214,17 +225,27 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
 
   Widget _buildStatsRow() {
     final active = _patients.where((p) => p['status'] == 'active').length;
-    final notActivated = _patients.where((p) => p['is_activated'] == false).length;
+    final notActivated =
+        _patients.where((p) => p['is_activated'] == false).length;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
-          _StatCard(label: 'Total Pasien', value: '${_patients.length}', color: const Color(0xFF1A6B8A)),
+          _StatCard(
+              label: 'Total Pasien',
+              value: '${_patients.length}',
+              color: const Color(0xFF1A6B8A)),
           const SizedBox(width: 12),
-          _StatCard(label: 'Aktif Berobat', value: '$active', color: const Color(0xFF2E8B57)),
+          _StatCard(
+              label: 'Aktif Berobat',
+              value: '$active',
+              color: const Color(0xFF2E8B57)),
           const SizedBox(width: 12),
-          _StatCard(label: 'Belum Aktivasi', value: '$notActivated', color: const Color(0xFFF0A500)),
+          _StatCard(
+              label: 'Belum Aktivasi',
+              value: '$notActivated',
+              color: const Color(0xFFF0A500)),
         ],
       ),
     );
@@ -295,12 +316,14 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
                       const SizedBox(height: 2),
                       Text(
                         '$gender ${patient['age']} tahun',
-                        style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF5A8DA0)),
+                        style: GoogleFonts.poppins(
+                            fontSize: 12, color: const Color(0xFF5A8DA0)),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.qr_code_2_rounded, size: 13, color: Color(0xFF8AACBA)),
+                          const Icon(Icons.qr_code_2_rounded,
+                              size: 13, color: Color(0xFF8AACBA)),
                           const SizedBox(width: 4),
                           Text(
                             qrCode,
@@ -321,7 +344,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: isActivated
                             ? const Color(0xFF2E8B57).withOpacity(0.1)
@@ -333,12 +357,15 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: isActivated ? const Color(0xFF2E8B57) : const Color(0xFFF0A500),
+                          color: isActivated
+                              ? const Color(0xFF2E8B57)
+                              : const Color(0xFFF0A500),
                         ),
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Icon(Icons.chevron_right_rounded, color: Color(0xFF8AACBA), size: 20),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: Color(0xFF8AACBA), size: 20),
                   ],
                 ),
               ],
@@ -361,7 +388,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
               color: const Color(0xFF1A6B8A).withOpacity(0.08),
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Icon(Icons.people_outline_rounded, size: 40, color: Color(0xFF1A6B8A)),
+            child: const Icon(Icons.people_outline_rounded,
+                size: 40, color: Color(0xFF1A6B8A)),
           ),
           const SizedBox(height: 16),
           Text(
@@ -376,7 +404,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
           Text(
             'Tap tombol "Tambah Pasien" untuk\nmenambahkan pasien baru',
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF5A8DA0)),
+            style: GoogleFonts.poppins(
+                fontSize: 13, color: const Color(0xFF5A8DA0)),
           ),
         ],
       ),
@@ -389,7 +418,8 @@ class _StatCard extends StatelessWidget {
   final String value;
   final Color color;
 
-  const _StatCard({required this.label, required this.value, required this.color});
+  const _StatCard(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -414,7 +444,8 @@ class _StatCard extends StatelessWidget {
             ),
             Text(
               label,
-              style: GoogleFonts.poppins(fontSize: 10, color: color.withOpacity(0.7)),
+              style: GoogleFonts.poppins(
+                  fontSize: 10, color: color.withOpacity(0.7)),
             ),
           ],
         ),
