@@ -22,6 +22,55 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
   final _confirmController = TextEditingController();
   bool _isLoading = false;
 
+  Map<String, dynamic>? _patientData;
+  String? _fetchError;
+  bool _isFetching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.qrCode.isNotEmpty) {
+      _qrCodeController.text = widget.qrCode;
+      _fetchPatientData(widget.qrCode);
+    }
+  }
+
+  Future<void> _fetchPatientData(String qrCode) async {
+    if (qrCode.trim().isEmpty) return;
+    setState(() {
+      _isFetching = true;
+      _fetchError = null;
+      _patientData = null;
+    });
+
+    try {
+      final data = await _authService.getPatientByQr(qrCode.trim().toUpperCase());
+      if (mounted) {
+        if (data['success'] == true) {
+          setState(() {
+            _patientData = data;
+          });
+        } else {
+          setState(() {
+            _fetchError = data['error'] ?? 'Data tidak ditemukan';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _fetchError = 'Gagal memuat data: ${e.toString().replaceAll('Exception: ', '')}';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFetching = false;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     _qrCodeController.dispose();
@@ -33,9 +82,6 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_qrCodeController.text.isEmpty && widget.qrCode.isNotEmpty) {
-      _qrCodeController.text = widget.qrCode;
-    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -69,36 +115,59 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
                   _SectionCard(
                     icon: Icons.medical_information_rounded,
                     title: 'Data Klinis',
-                    child: const Column(
-                      children: [
-                        _DataTile(
-                            label: 'NIK',
-                            value: '3174012345678901'),
-                        _DataTile(
-                            label: 'Nama Lengkap',
-                            value: 'Budi Santoso'),
-                        _DataTile(
-                            label: 'Tempat, Tgl Lahir',
-                            value: 'Jakarta, 15 Agustus 1985'),
-                        _DataTile(
-                          label: 'Alamat',
-                          value: 'Jl. Kebon Jeruk Raya No. 12, Jakarta Barat',
-                        ),
-                        _DataTile(
-                          label: 'Faskes',
-                          value: 'RSUD Kebon Jeruk',
-                        ),
-                        _DataTile(
-                          label: 'Tanggal Mulai Perawatan',
-                          value: '01 Oktober 2023',
-                        ),
-                        _DataTile(
-                          label: 'Berat Badan Awal',
-                          value: '55.5 kg',
-                          showDivider: false,
-                        ),
-                      ],
-                    ),
+                    child: _isFetching
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : _fetchError != null
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Text(
+                                  _fetchError!,
+                                  style: const TextStyle(color: Colors.redAccent),
+                                ),
+                              )
+                            : _patientData != null
+                                ? Column(
+                                    children: [
+                                      _DataTile(
+                                          label: 'NIK',
+                                          value: _patientData!['nik'] ?? '-'),
+                                      _DataTile(
+                                          label: 'Nama Lengkap',
+                                          value: _patientData!['full_name'] ?? '-'),
+                                      _DataTile(
+                                          label: 'Tempat, Tgl Lahir',
+                                          value: '${_patientData!['birth_place'] ?? '-'}, ${_patientData!['birth_date'] ?? '-'}'),
+                                      _DataTile(
+                                        label: 'Alamat',
+                                        value: _patientData!['address'] ?? '-',
+                                      ),
+                                      _DataTile(
+                                        label: 'Faskes',
+                                        value: _patientData!['faskes_name'] ?? '-',
+                                      ),
+                                      _DataTile(
+                                        label: 'Mulai Perawatan',
+                                        value: _patientData!['treatment_start_date'] ?? '-',
+                                      ),
+                                      _DataTile(
+                                        label: 'Berat Badan Awal',
+                                        value: '${_patientData!['initial_weight_kg'] ?? '-'} kg',
+                                        showDivider: false,
+                                      ),
+                                    ],
+                                  )
+                                : const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 8),
+                                    child: Text(
+                                      'Masukkan atau scan QR Code untuk memuat data pasien.',
+                                      style: TextStyle(color: Color(0xFF43474E)),
+                                    ),
+                                  ),
                   ),
                   const SizedBox(height: 20),
                   _SectionCard(
@@ -111,12 +180,25 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
                           TextFormField(
                             controller: _qrCodeController,
                             textCapitalization: TextCapitalization.characters,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Kode Aktivasi / QR Code',
                               hintText: 'Contoh: TBC-8AB3F',
-                              prefixIcon: Icon(Icons.qr_code_rounded),
+                              prefixIcon: const Icon(Icons.qr_code_rounded),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.search_rounded),
+                                onPressed: () {
+                                  if (_qrCodeController.text.isNotEmpty) {
+                                    _fetchPatientData(_qrCodeController.text);
+                                  }
+                                },
+                              ),
                             ),
                             validator: _required('Kode aktivasi wajib diisi'),
+                            onFieldSubmitted: (value) {
+                              if (value.isNotEmpty) {
+                                _fetchPatientData(value);
+                              }
+                            },
                           ),
                           const SizedBox(height: 14),
                           TextFormField(
