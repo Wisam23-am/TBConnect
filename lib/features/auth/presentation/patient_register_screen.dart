@@ -71,17 +71,30 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
                     title: 'Data Klinis',
                     child: const Column(
                       children: [
-                        _DataTile(label: 'Nama Lengkap', value: 'Budi Santoso'),
-                        _DataTile(label: 'NIK', value: '3174012345678901'),
                         _DataTile(
-                            label: 'Tanggal Lahir', value: '15 Agustus 1985'),
+                            label: 'NIK',
+                            value: '3174012345678901'),
+                        _DataTile(
+                            label: 'Nama Lengkap',
+                            value: 'Budi Santoso'),
+                        _DataTile(
+                            label: 'Tempat, Tgl Lahir',
+                            value: 'Jakarta, 15 Agustus 1985'),
                         _DataTile(
                           label: 'Alamat',
                           value: 'Jl. Kebon Jeruk Raya No. 12, Jakarta Barat',
                         ),
                         _DataTile(
+                          label: 'Faskes',
+                          value: 'RSUD Kebon Jeruk',
+                        ),
+                        _DataTile(
                           label: 'Tanggal Mulai Perawatan',
                           value: '01 Oktober 2023',
+                        ),
+                        _DataTile(
+                          label: 'Berat Badan Awal',
+                          value: '55.5 kg',
                           showDivider: false,
                         ),
                       ],
