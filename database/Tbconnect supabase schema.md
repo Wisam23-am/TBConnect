@@ -452,6 +452,39 @@ CREATE TRIGGER on_auth_user_created
 COMMENT ON FUNCTION public.handle_new_auth_user IS 'Auto-create doctors row saat dokter register via Supabase Auth';
 
 
+-- Fungsi: Ambil data pasien berdasarkan QR Code (sebelum login/aktivasi)
+CREATE OR REPLACE FUNCTION public.get_patient_by_qr(p_qr_code TEXT)
+RETURNS JSONB AS $$
+DECLARE
+  v_patient public.patients;
+BEGIN
+  SELECT * INTO v_patient
+  FROM public.patients
+  WHERE qr_code = p_qr_code
+    AND is_activated = FALSE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'QR code tidak valid atau sudah digunakan');
+  END IF;
+
+  IF v_patient.qr_expires_at IS NOT NULL AND v_patient.qr_expires_at < NOW() THEN
+    RETURN jsonb_build_object('success', false, 'error', 'QR code sudah kadaluarsa');
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'full_name', v_patient.full_name,
+    'treatment_start_date', v_patient.treatment_start_date,
+    'initial_weight_kg', v_patient.initial_weight_kg,
+    'age', v_patient.age,
+    'address', v_patient.address
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.get_patient_by_qr IS 'RPC: Mengambil data pasien via QR code sebelum pasien melakukan aktivasi.';
+
+
 -- ============================================================
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================================

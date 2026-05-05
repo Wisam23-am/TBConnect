@@ -120,6 +120,20 @@ class AuthService {
   }
 
   // ----------------------------------------------------------
+  // PASIEN: Dapatkan Data via QR Code
+  // Dipanggil sebelum registrasi untuk mengambil data klinis pasien
+  // ----------------------------------------------------------
+  Future<Map<String, dynamic>> getPatientByQr(String qrCode) async {
+    final response = await _supabase.rpc(
+      'get_patient_by_qr',
+      params: {
+        'p_qr_code': qrCode,
+      },
+    );
+    return Map<String, dynamic>.from(response);
+  }
+
+  // ----------------------------------------------------------
   // PASIEN: Aktivasi via QR Code
   // Dipanggil setelah pasien scan QR → tampilkan form username & password
   // ----------------------------------------------------------
