@@ -413,6 +413,7 @@ BEGIN
   END IF;
 
   RETURN jsonb_build_object(
+<<<<<<< Updated upstream
     'success',       true,
     'patient_id',    v_patient.id,
     'full_name',     v_patient.full_name,
@@ -420,6 +421,23 @@ BEGIN
     'qr_code',       v_patient.qr_code,
     'treatment_start_date', v_patient.treatment_start_date,
     'initial_weight_kg',    v_patient.initial_weight_kg
+=======
+    'success', true,
+    'nik', v_patient.nik,
+    'full_name', v_patient.full_name,
+    'birth_place', v_patient.birth_place,
+    'birth_date', v_patient.birth_date,
+    'gender', v_patient.gender,
+    'phone_number', v_patient.phone_number,
+    'treatment_start_date', v_patient.treatment_start_date,
+    'initial_weight_kg', v_patient.initial_weight_kg,
+    'age', v_patient.age,
+    'address', v_patient.address,
+    'faskes_name', v_patient.faskes_name,
+    'patient_id', v_patient.id,
+    'doctor_id', v_patient.doctor_id,
+    'qr_code', v_patient.qr_code
+>>>>>>> Stashed changes
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -473,11 +491,17 @@ BEGIN
 
   RETURN jsonb_build_object(
     'success', true,
+    'nik', v_patient.nik,
     'full_name', v_patient.full_name,
+    'birth_place', v_patient.birth_place,
+    'birth_date', v_patient.birth_date,
+    'gender', v_patient.gender,
+    'phone_number', v_patient.phone_number,
     'treatment_start_date', v_patient.treatment_start_date,
     'initial_weight_kg', v_patient.initial_weight_kg,
     'age', v_patient.age,
-    'address', v_patient.address
+    'address', v_patient.address,
+    'faskes_name', v_patient.faskes_name
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
