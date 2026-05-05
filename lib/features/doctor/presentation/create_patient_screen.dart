@@ -1,0 +1,382 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class CreatePatientScreen extends StatefulWidget {
+  const CreatePatientScreen({super.key});
+
+  @override
+  State<CreatePatientScreen> createState() => _CreatePatientScreenState();
+}
+
+class _CreatePatientScreenState extends State<CreatePatientScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _namaController = TextEditingController();
+  final _ttlController = TextEditingController();
+  final _nikController = TextEditingController();
+  final _alamatController = TextEditingController();
+  final _faskesController = TextEditingController();
+  final _tanggalMasukController = TextEditingController();
+
+  int _selectedIndex = 1; // 1 for Register based on the mockup
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _ttlController.dispose();
+    _nikController.dispose();
+    _alamatController.dispose();
+    _faskesController.dispose();
+    _tanggalMasukController.dispose();
+    super.dispose();
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    // Handle navigation here
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: const BoxDecoration(
+            color: Color(0xFFF8F9FA),
+            border: Border(
+              bottom: BorderSide(
+                width: 1,
+                color: Color(0xFFDBE2EF),
+              ),
+            ),
+          ),
+          child: SafeArea(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Color(0xFF112D4E)),
+                      onPressed: () => Navigator.of(context).pop(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      'Patient Management',
+                      style: GoogleFonts.manrope(
+                        color: const Color(0xFF112D4E),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.40,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFC4C6CF)),
+                    image: const DecorationImage(
+                      image: NetworkImage("https://placehold.co/30x30"),
+                      fit: BoxFit.fill,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Registrasi Baru',
+              style: GoogleFonts.manrope(
+                color: const Color(0xFF191C1D),
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.24,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Silakan lengkapi formulir di bawah ini untuk\nmendaftarkan pasien TB baru ke dalam sistem.',
+              style: GoogleFonts.manrope(
+                color: const Color(0xFF43474E),
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0x4CC4C6CF)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0A001833),
+                    blurRadius: 20,
+                    offset: Offset(0, 4),
+                  )
+                ],
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFormField(
+                      controller: _namaController,
+                      label: 'Nama Lengkap',
+                      hintText: 'Masukkan nama lengkap pasien',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFormField(
+                      controller: _ttlController,
+                      label: 'Tempat & Tanggal Lahir',
+                      hintText: 'Contoh: Jakarta, 12 Agustus 1990',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFormField(
+                      controller: _nikController,
+                      label: 'Nomor NIK',
+                      hintText: '16 digit nomor induk kependudukan',
+                      keyboardType: TextInputType.number,
+                      maxLength: 16,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFormField(
+                      controller: _alamatController,
+                      label: 'Alamat Lengkap',
+                      hintText: 'Masukkan alamat tempat tinggal saat ini',
+                      maxLines: 3,
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Divider(color: Color(0xFFE1E3E4), height: 1),
+                    ),
+                    _buildFormField(
+                      controller: _faskesController,
+                      label: 'Nama Rumah Sakit / Faskes',
+                      hintText: 'Nama fasilitas kesehatan terdaftar',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFormField(
+                      controller: _tanggalMasukController,
+                      label: 'Tanggal Masuk',
+                      hintText: 'mm/dd/yyyy',
+                      keyboardType: TextInputType.datetime,
+                      suffixIcon: const Icon(Icons.calendar_today_outlined, size: 20, color: Color(0xFF6B7280)),
+                      readOnly: true,
+                      onTap: () async {
+                        DateTime? pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2101),
+                        );
+                        if (pickedDate != null) {
+                          String formattedDate = "${pickedDate.month.toString().padLeft(2, '0')}/${pickedDate.day.toString().padLeft(2, '0')}/${pickedDate.year}";
+                          setState(() {
+                            _tanggalMasukController.text = formattedDate;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    // Process data
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Processing Data')),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF001833),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 4,
+                  shadowColor: const Color(0x26001833),
+                ),
+                child: Text(
+                  'Simpan & Buat Kode QR',
+                  style: GoogleFonts.manrope(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 40), // Bottom padding
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x0A112D4E),
+              blurRadius: 20,
+              offset: Offset(0, -4),
+            )
+          ],
+        ),
+        child: BottomNavigationBar(
+          backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedIndex,
+          selectedItemColor: const Color(0xFF112D4E),
+          unselectedItemColor: const Color(0xFF94A3B8),
+          selectedLabelStyle: GoogleFonts.manrope(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+          unselectedLabelStyle: GoogleFonts.manrope(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+          onTap: _onItemTapped,
+          items: [
+            BottomNavigationBarItem(
+              icon: Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Icon(Icons.people_outline, color: _selectedIndex == 0 ? const Color(0xFF112D4E) : const Color(0xFF94A3B8)),
+              ),
+              label: 'Patients',
+            ),
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _selectedIndex == 1 ? const Color(0xFFEFF6FF) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(Icons.person_add_alt_1_outlined, color: _selectedIndex == 1 ? const Color(0xFF112D4E) : const Color(0xFF94A3B8)),
+              ),
+              label: 'Register',
+            ),
+            BottomNavigationBarItem(
+              icon: Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Icon(Icons.bar_chart_outlined, color: _selectedIndex == 2 ? const Color(0xFF112D4E) : const Color(0xFF94A3B8)),
+              ),
+              label: 'Insights',
+            ),
+            BottomNavigationBarItem(
+              icon: Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Icon(Icons.person_outline, color: _selectedIndex == 3 ? const Color(0xFF112D4E) : const Color(0xFF94A3B8)),
+              ),
+              label: 'Account',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormField({
+    required TextEditingController controller,
+    required String label,
+    required String hintText,
+    TextInputType? keyboardType,
+    int? maxLength,
+    int maxLines = 1,
+    Widget? suffixIcon,
+    bool readOnly = false,
+    VoidCallback? onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.manrope(
+            color: const Color(0xFF191C1D),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.60,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLength: maxLength,
+          maxLines: maxLines,
+          readOnly: readOnly,
+          onTap: onTap,
+          style: GoogleFonts.manrope(
+            color: const Color(0xFF191C1D),
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+          ),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: GoogleFonts.manrope(
+              color: const Color(0xFF6B7280),
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8F9FA),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            suffixIcon: suffixIcon,
+            counterText: "", // Hide character counter for maxLength
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFC4C6CF), width: 2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFC4C6CF), width: 2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFF001833), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return '$label wajib diisi';
+            }
+            if (label == 'Nomor NIK' && value.length != 16) {
+              return 'NIK harus 16 digit';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+}
