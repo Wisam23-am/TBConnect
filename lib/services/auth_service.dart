@@ -334,25 +334,35 @@ class DoctorService {
   // Tambah pasien baru → QR code di-generate otomatis via trigger
   // ----------------------------------------------------------
   Future<Map<String, dynamic>> addPatient({
+    required String nik,
     required String fullName,
-    required int age,
+    required String birthPlace,
+    required DateTime birthDate,
     required String gender,
     required double initialWeightKg,
     required DateTime treatmentStartDate,
     String? phoneNumber,
     String? address,
+    String? faskesName,
   }) async {
     final doctorId = _supabase.auth.currentUser!.id;
 
+    // Hitung umur secara simpel (bisa disesuaikan jika perlu akurat ke hari)
+    final age = DateTime.now().year - birthDate.year;
+
     final response = await _supabase.from('patients').insert({
       'doctor_id':            doctorId,
+      'nik':                  nik,
       'full_name':            fullName,
+      'birth_place':          birthPlace,
+      'birth_date':           birthDate.toIso8601String().split('T').first,
       'age':                  age,
       'gender':               gender,
       'initial_weight_kg':    initialWeightKg,
       'treatment_start_date': treatmentStartDate.toIso8601String().split('T').first,
       'phone_number':         phoneNumber,
       'address':              address,
+      'faskes_name':          faskesName,
     }).select().single();
 
     // Auto-generate jadwal kunjungan 6 bulan

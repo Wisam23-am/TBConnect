@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 import '../../features/auth/presentation/portal_role_screen.dart';
-import 'add_patient_page.dart';
+import '../../features/doctor/presentation/create_patient_screen.dart';
 import 'patient_qr_page.dart';
 
 class DoctorDashboardPage extends StatefulWidget {
@@ -157,7 +157,7 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
         onPressed: () async {
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddPatientPage()),
+            MaterialPageRoute(builder: (_) => const CreatePatientScreen()),
           );
           if (result == true) _loadData();
         },
