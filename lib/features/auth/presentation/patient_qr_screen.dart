@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'patient_register_screen.dart';
 
@@ -34,9 +35,12 @@ class _PatientQrForm extends StatefulWidget {
 
 class _PatientQrFormState extends State<_PatientQrForm> {
   final _qrCodeController = TextEditingController();
+  final MobileScannerController _scannerController = MobileScannerController();
+  bool _isScanned = false;
 
   @override
   void dispose() {
+    _scannerController.dispose();
     _qrCodeController.dispose();
     super.dispose();
   }
@@ -72,8 +76,39 @@ class _PatientQrFormState extends State<_PatientQrForm> {
               ),
             ],
           ),
+          clipBehavior: Clip.hardEdge,
           child: Stack(
             children: [
+              MobileScanner(
+                controller: _scannerController,
+                onDetect: (capture) {
+                  if (_isScanned) return;
+                  final List<Barcode> barcodes = capture.barcodes;
+                  if (barcodes.isNotEmpty) {
+                    final barcode = barcodes.first;
+                    if (barcode.rawValue != null) {
+                      setState(() {
+                        _isScanned = true;
+                        _qrCodeController.text = barcode.rawValue!;
+                      });
+                      Navigator.of(context)
+                          .push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => PatientRegisterScreen(
+                              qrCode: barcode.rawValue!),
+                        ),
+                      )
+                          .then((_) {
+                        if (mounted) {
+                          setState(() {
+                            _isScanned = false;
+                          });
+                        }
+                      });
+                    }
+                  }
+                },
+              ),
               Center(
                 child: Container(
                   width: 210,
@@ -81,14 +116,9 @@ class _PatientQrFormState extends State<_PatientQrForm> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFFAFC8F1),
+                      color: const Color(0xFFAFC8F1).withValues(alpha: 0.5),
                       width: 2,
                     ),
-                  ),
-                  child: const Icon(
-                    Icons.qr_code_scanner_rounded,
-                    size: 72,
-                    color: Color(0xFFD3E3FF),
                   ),
                 ),
               ),
