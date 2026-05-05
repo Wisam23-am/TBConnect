@@ -134,17 +134,24 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
                                 ? Column(
                                     children: [
                                       _DataTile(
+                                          label: 'NIK',
+                                          value: _patientData!['nik'] ?? '-'),
+                                      _DataTile(
                                           label: 'Nama Lengkap',
                                           value: _patientData!['full_name'] ?? '-'),
                                       _DataTile(
-                                          label: 'Umur',
-                                          value: '${_patientData!['age'] ?? '-'} Tahun'),
+                                          label: 'Tempat, Tgl Lahir',
+                                          value: '${_patientData!['birth_place'] ?? '-'}, ${_patientData!['birth_date'] ?? '-'}'),
                                       _DataTile(
                                         label: 'Alamat',
                                         value: _patientData!['address'] ?? '-',
                                       ),
                                       _DataTile(
-                                        label: 'Tanggal Mulai Perawatan',
+                                        label: 'Faskes',
+                                        value: _patientData!['faskes_name'] ?? '-',
+                                      ),
+                                      _DataTile(
+                                        label: 'Mulai Perawatan',
                                         value: _patientData!['treatment_start_date'] ?? '-',
                                       ),
                                       _DataTile(

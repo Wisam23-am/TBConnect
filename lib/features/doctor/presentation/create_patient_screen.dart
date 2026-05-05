@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../services/auth_service.dart';
+import '../../../pages/doctor/patient_qr_page.dart';
+
 class CreatePatientScreen extends StatefulWidget {
   const CreatePatientScreen({super.key});
 
@@ -12,22 +15,31 @@ class _CreatePatientScreenState extends State<CreatePatientScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _namaController = TextEditingController();
-  final _ttlController = TextEditingController();
+  final _tempatLahirController = TextEditingController();
+  final _tanggalLahirController = TextEditingController();
   final _nikController = TextEditingController();
   final _alamatController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _faskesController = TextEditingController();
   final _tanggalMasukController = TextEditingController();
+  final _beratAwalController = TextEditingController();
+  
+  String? _gender;
+  bool _isLoading = false;
 
   int _selectedIndex = 1; // 1 for Register based on the mockup
 
   @override
   void dispose() {
     _namaController.dispose();
-    _ttlController.dispose();
+    _tempatLahirController.dispose();
+    _tanggalLahirController.dispose();
     _nikController.dispose();
     _alamatController.dispose();
+    _phoneController.dispose();
     _faskesController.dispose();
     _tanggalMasukController.dispose();
+    _beratAwalController.dispose();
     super.dispose();
   }
 
@@ -36,6 +48,74 @@ class _CreatePatientScreenState extends State<CreatePatientScreen> {
       _selectedIndex = index;
     });
     // Handle navigation here
+  }
+
+  Future<void> _submitPatient() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    
+    if (_gender == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih jenis kelamin terlebih dahulu')),
+      );
+      return;
+    }
+    
+    double? beratBadan = double.tryParse(_beratAwalController.text);
+    if (beratBadan == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Format berat badan salah')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      // Parse dates safely
+      final birthDate = DateTime.parse(_tanggalLahirController.text);
+      final startDate = DateTime.parse(_tanggalMasukController.text);
+
+      final doctorService = DoctorService(); // Use DoctorService
+      final response = await doctorService.addPatient(
+        nik: _nikController.text.trim(),
+        fullName: _namaController.text.trim(),
+        birthPlace: _tempatLahirController.text.trim(),
+        birthDate: birthDate,
+        gender: _gender!,
+        initialWeightKg: beratBadan,
+        treatmentStartDate: startDate,
+        phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        address: _alamatController.text.trim().isEmpty ? null : _alamatController.text.trim(),
+        faskesName: _faskesController.text.trim().isEmpty ? null : _faskesController.text.trim(),
+      );
+
+      if (mounted) {
+        // Navigasi ke halaman QR dengan data yang baru dibuat
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PatientQRPage(
+              patientName: response['full_name'],
+              qrCode: response['qr_code'],
+              isActivated: false,
+              fromAddPatient: true,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menambahkan pasien: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -140,16 +220,13 @@ class _CreatePatientScreenState extends State<CreatePatientScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildFormField(
-                      controller: _namaController,
-                      label: 'Nama Lengkap',
-                      hintText: 'Masukkan nama lengkap pasien',
-                    ),
-                    const SizedBox(height: 16),
-                    _buildFormField(
-                      controller: _ttlController,
-                      label: 'Tempat & Tanggal Lahir',
-                      hintText: 'Contoh: Jakarta, 12 Agustus 1990',
+                    Text(
+                      'Identitas Pribadi',
+                      style: GoogleFonts.manrope(
+                        color: const Color(0xFF112D4E),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     _buildFormField(
@@ -161,59 +238,173 @@ class _CreatePatientScreenState extends State<CreatePatientScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildFormField(
-                      controller: _alamatController,
-                      label: 'Alamat Lengkap',
-                      hintText: 'Masukkan alamat tempat tinggal saat ini',
-                      maxLines: 3,
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Divider(color: Color(0xFFE1E3E4), height: 1),
-                    ),
-                    _buildFormField(
-                      controller: _faskesController,
-                      label: 'Nama Rumah Sakit / Faskes',
-                      hintText: 'Nama fasilitas kesehatan terdaftar',
+                      controller: _namaController,
+                      label: 'Nama Lengkap',
+                      hintText: 'Masukkan nama lengkap pasien',
                     ),
                     const SizedBox(height: 16),
                     _buildFormField(
-                      controller: _tanggalMasukController,
-                      label: 'Tanggal Masuk',
-                      hintText: 'mm/dd/yyyy',
+                      controller: _tempatLahirController,
+                      label: 'Tempat Lahir',
+                      hintText: 'Contoh: Jakarta',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFormField(
+                      controller: _tanggalLahirController,
+                      label: 'Tanggal Lahir',
+                      hintText: 'Pilih tanggal',
                       keyboardType: TextInputType.datetime,
                       suffixIcon: const Icon(Icons.calendar_today_outlined, size: 20, color: Color(0xFF6B7280)),
                       readOnly: true,
                       onTap: () async {
                         DateTime? pickedDate = await showDatePicker(
                           context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2101),
+                          initialDate: DateTime(1990),
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime.now(),
                         );
                         if (pickedDate != null) {
-                          String formattedDate = "${pickedDate.month.toString().padLeft(2, '0')}/${pickedDate.day.toString().padLeft(2, '0')}/${pickedDate.year}";
+                          String formattedDate = "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
                           setState(() {
-                            _tanggalMasukController.text = formattedDate;
+                            _tanggalLahirController.text = formattedDate;
                           });
                         }
                       },
+                    ),
+                    const SizedBox(height: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Jenis Kelamin',
+                          style: GoogleFonts.manrope(
+                            color: const Color(0xFF191C1D),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.60,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: _gender,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFF8F9FA),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFFC4C6CF), width: 2),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFFC4C6CF), width: 2),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFF001833), width: 2),
+                            ),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'male', child: Text('Laki-laki')),
+                            DropdownMenuItem(value: 'female', child: Text('Perempuan')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _gender = value;
+                            });
+                          },
+                          validator: (value) => value == null ? 'Pilih jenis kelamin' : null,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFormField(
+                      controller: _phoneController,
+                      label: 'Nomor Handphone',
+                      hintText: 'Contoh: 08123456789',
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFormField(
+                      controller: _alamatController,
+                      label: 'Alamat Lengkap',
+                      hintText: 'Masukkan alamat tempat tinggal saat ini',
+                      maxLines: 3,
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0x4CC4C6CF)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0A001833),
+                    blurRadius: 20,
+                    offset: Offset(0, 4),
+                  )
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Data Medis & Pengobatan',
+                    style: GoogleFonts.manrope(
+                      color: const Color(0xFF112D4E),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormField(
+                    controller: _faskesController,
+                    label: 'Nama Rumah Sakit / Faskes',
+                    hintText: 'Nama fasilitas kesehatan terdaftar',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormField(
+                    controller: _tanggalMasukController,
+                    label: 'Tanggal Mulai Perawatan',
+                    hintText: 'Pilih tanggal',
+                    keyboardType: TextInputType.datetime,
+                    suffixIcon: const Icon(Icons.calendar_today_outlined, size: 20, color: Color(0xFF6B7280)),
+                    readOnly: true,
+                    onTap: () async {
+                      DateTime? pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2101),
+                      );
+                      if (pickedDate != null) {
+                        String formattedDate = "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+                        setState(() {
+                          _tanggalMasukController.text = formattedDate;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormField(
+                    controller: _beratAwalController,
+                    label: 'Berat Badan Awal (kg)',
+                    hintText: 'Misal: 55.5',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    // Process data
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Processing Data')),
-                    );
-                  }
-                },
+                onPressed: _isLoading ? null : _submitPatient,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF001833),
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -223,14 +414,20 @@ class _CreatePatientScreenState extends State<CreatePatientScreen> {
                   elevation: 4,
                   shadowColor: const Color(0x26001833),
                 ),
-                child: Text(
-                  'Simpan & Buat Kode QR',
-                  style: GoogleFonts.manrope(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                      )
+                    : Text(
+                        'Simpan & Buat Kode QR',
+                        style: GoogleFonts.manrope(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 40), // Bottom padding
