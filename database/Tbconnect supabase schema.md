@@ -413,15 +413,6 @@ BEGIN
   END IF;
 
   RETURN jsonb_build_object(
-<<<<<<< Updated upstream
-    'success',       true,
-    'patient_id',    v_patient.id,
-    'full_name',     v_patient.full_name,
-    'doctor_id',     v_patient.doctor_id,
-    'qr_code',       v_patient.qr_code,
-    'treatment_start_date', v_patient.treatment_start_date,
-    'initial_weight_kg',    v_patient.initial_weight_kg
-=======
     'success', true,
     'nik', v_patient.nik,
     'full_name', v_patient.full_name,
@@ -437,7 +428,6 @@ BEGIN
     'patient_id', v_patient.id,
     'doctor_id', v_patient.doctor_id,
     'qr_code', v_patient.qr_code
->>>>>>> Stashed changes
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
