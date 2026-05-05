@@ -143,6 +143,12 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
                                           label: 'Tempat, Tgl Lahir',
                                           value: '${_patientData!['birth_place'] ?? '-'}, ${_patientData!['birth_date'] ?? '-'}'),
                                       _DataTile(
+                                          label: 'Jenis Kelamin',
+                                          value: _patientData!['gender'] == 'male' ? 'Laki-laki' : (_patientData!['gender'] == 'female' ? 'Perempuan' : '-')),
+                                      _DataTile(
+                                          label: 'Nomor Telepon',
+                                          value: _patientData!['phone_number'] ?? '-'),
+                                      _DataTile(
                                         label: 'Alamat',
                                         value: _patientData!['address'] ?? '-',
                                       ),
