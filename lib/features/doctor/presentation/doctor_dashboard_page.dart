@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../services/auth_service.dart';
-import '../../features/auth/presentation/portal_role_screen.dart';
-import '../../features/doctor/presentation/create_patient_screen.dart';
+import 'package:tbconnect/services/auth_service.dart';
+import 'package:tbconnect/features/auth/presentation/portal_role_screen.dart';
+import 'create_patient_screen.dart';
 import 'patient_qr_page.dart';
 
 class DoctorDashboardPage extends StatefulWidget {

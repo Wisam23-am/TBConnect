@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/auth_service.dart';
-import '../../../pages/doctor/doctor_dashboard_page.dart';
+import '../../../features/doctor/presentation/home_page.dart';
 
 class DoctorLoginScreen extends StatefulWidget {
   const DoctorLoginScreen({super.key});
@@ -335,7 +335,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
         if (response.user != null) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute<void>(
-              builder: (_) => const DoctorDashboardPage(),
+              builder: (_) => const HomePage(),
             ),
             (route) => false,
           );
@@ -380,7 +380,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
         if (response.user != null) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute<void>(
-              builder: (_) => const DoctorDashboardPage(),
+              builder: (_) => const HomePage(),
             ),
             (route) => false,
           );

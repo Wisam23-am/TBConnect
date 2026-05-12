@@ -47,8 +47,11 @@ CREATE TABLE public.patients (
   doctor_id         UUID NOT NULL REFERENCES public.doctors(id) ON DELETE RESTRICT,
 
   -- Data medis dasar
+  nik               TEXT UNIQUE,
   full_name         TEXT NOT NULL,
-  age               SMALLINT NOT NULL CHECK (age > 0 AND age < 150),
+  birth_place       TEXT,
+  birth_date        DATE,
+  age               SMALLINT CHECK (age > 0 AND age < 150),
   gender            TEXT CHECK (gender IN ('male', 'female')),
   phone_number      TEXT,
   address           TEXT,
@@ -57,6 +60,7 @@ CREATE TABLE public.patients (
   initial_weight_kg  NUMERIC(5,2) NOT NULL,     -- Berat badan awal (kg)
   treatment_start_date DATE NOT NULL,
   treatment_duration_months SMALLINT DEFAULT 6,
+  faskes_name       TEXT,
 
   -- Akun pasien (dibuat saat aktivasi QR)
   username          TEXT UNIQUE,                -- Diisi pasien saat aktivasi
@@ -150,19 +154,12 @@ CREATE TABLE public.weight_logs (
 
   log_date    DATE NOT NULL,
   weight_kg   NUMERIC(5,2) NOT NULL CHECK (weight_kg > 0),
-  day_of_treatment INT GENERATED ALWAYS AS (
-    -- Dihitung dari treatment_start_date, diisi via trigger
-    NULL
-  ) STORED,                                -- Akan diisi via trigger (hari ke-berapa pengobatan)
+  day_of_treatment INT,
   notes       TEXT,
   created_at  TIMESTAMPTZ DEFAULT NOW(),
 
   UNIQUE (patient_id, log_date)
 );
-
--- Ganti kolom generated dengan kolom biasa (lebih fleksibel untuk trigger)
-ALTER TABLE public.weight_logs DROP COLUMN day_of_treatment;
-ALTER TABLE public.weight_logs ADD COLUMN day_of_treatment INT;
 
 COMMENT ON TABLE public.weight_logs IS 'Tracking berat badan pasien. Input di hari ke-30, 60, 90, dst';
 
