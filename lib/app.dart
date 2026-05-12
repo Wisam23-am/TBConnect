@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'features/auth/presentation/portal_role_screen.dart';
-import 'pages/doctor/doctor_dashboard_page.dart';
+import 'features/doctor/presentation/home_page.dart';
 
 class TbConnectApp extends StatelessWidget {
   const TbConnectApp({super.key});
@@ -89,7 +89,7 @@ class TbConnectApp extends StatelessWidget {
         ),
       ),
       home: Supabase.instance.client.auth.currentUser != null
-          ? const DoctorDashboardPage()
+          ? const HomePage()
           : const PortalRoleScreen(),
     );
   }

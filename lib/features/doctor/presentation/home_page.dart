@@ -5,6 +5,7 @@ import 'package:tbconnect/pages/doctor/doctor_feedback_page.dart';
 import 'package:tbconnect/pages/doctor/doctor_profile_page.dart';
 import 'package:tbconnect/pages/doctor/patient_detail_page.dart';
 import 'package:tbconnect/widgets/doctor_bottom_nav_bar.dart';
+import 'package:tbconnect/services/auth_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,37 +15,43 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final List<_PriorityPatient> _patients = [
-    _PriorityPatient(
-      name: 'Budi Widodo',
-      subtitle: 'Batuk Berdarah',
-      status: 'Segera',
-      statusColor: const Color(0xFFDE2C2C),
-      dailyLog: 'Pasien melaporkan minum obat tepat waktu hari ini.',
-      symptoms: ['Batuk', 'Darah'],
-      note: 'Segera lakukan evaluasi mendalam dan konfirmasi ketersediaan obat yang sesuai.',
-    ),
-    _PriorityPatient(
-      name: 'Siti Aminah',
-      subtitle: 'Tidak ada gejala berat',
-      status: 'Stabil',
-      statusColor: const Color(0xFF4B7DD8),
-      dailyLog: 'Pasien melaporkan minum obat tepat waktu hari ini.',
-      symptoms: ['Batuk', 'Demam Ringan'],
-      note: 'Sedikit mual setelah makan siang tetapi sudah membaik.',
-    ),
-    _PriorityPatient(
-      name: 'Ahmad Suryana',
-      subtitle: 'Belum lapor 2 hari',
-      status: 'Terlambat',
-      statusColor: const Color(0xFF527BBF),
-      dailyLog: 'Pasien belum mengirim laporan minum obat selama dua hari terakhir.',
-      symptoms: ['Belum Lapor'],
-      note: 'Hubungi pasien dan pastikan ia kembali mengisi laporan harian.',
-    ),
-  ];
+  final DoctorService _doctorService = DoctorService();
+
+  List<Map<String, dynamic>> _patients = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   DateTime _selectedDate = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTriageData();
+  }
+
+  Future<void> _loadTriageData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final data = await _doctorService.getTriageBoard();
+      if (mounted) {
+        setState(() {
+          _patients = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Gagal memuat data: $e';
+        });
+      }
+    }
+  }
 
   String get _dayLabel {
     final weekday = _selectedDate.weekday;
@@ -54,18 +61,8 @@ class _HomePageState extends State<HomePage> {
 
   String get _monthLabel {
     const names = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
     ];
     return names[_selectedDate.month - 1];
   }
@@ -84,7 +81,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() => _selectedDate = picked);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -108,6 +105,111 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // ──────────────────────────────────────────────
+  // Helper: ambil status & warna berdasarkan triage
+  // ──────────────────────────────────────────────
+  ({String label, Color color, String subtitle}) _resolveStatus(
+      Map<String, dynamic> patient) {
+    final hasEmergency = patient['has_emergency_symptom'] == true;
+    final hasMissed = patient['has_missed_medication'] == true;
+    final priority = patient['priority_level'] as int? ?? 3;
+
+    if (hasEmergency || priority == 1) {
+      return (
+        label: 'Segera',
+        color: const Color(0xFFDE2C2C),
+        subtitle: 'Gejala darurat terdeteksi',
+      );
+    } else if (hasMissed || priority == 2) {
+      return (
+        label: 'Terlambat',
+        color: const Color(0xFF527BBF),
+        subtitle: 'Belum lapor minum obat hari ini',
+      );
+    } else {
+      return (
+        label: 'Stabil',
+        color: const Color(0xFF4B7DD8),
+        subtitle: 'Tidak ada gejala berat',
+      );
+    }
+  }
+
+  // ──────────────────────────────────────────────
+  // Helper: teks log harian
+  // ──────────────────────────────────────────────
+  String _dailyLogText(Map<String, dynamic> patient) {
+    final adherence = patient['adherence_7d_pct'];
+    final weight = patient['latest_weight_kg'];
+
+    final parts = <String>[];
+    if (adherence != null) {
+      parts.add('Kepatuhan 7 hari: $adherence%');
+    }
+    if (weight != null) {
+      parts.add('Berat terbaru: $weight kg');
+    }
+    if (parts.isEmpty) {
+      return 'Belum ada data laporan harian.';
+    }
+    return parts.join(' | ');
+  }
+
+  // ──────────────────────────────────────────────
+  // Helper: gejala yang terdeteksi
+  // ──────────────────────────────────────────────
+  List<String> _symptoms(Map<String, dynamic> patient) {
+    final list = <String>[];
+    if (patient['has_emergency_symptom'] == true) {
+      list.add('Gejala Darurat');
+    }
+    if (patient['has_missed_medication'] == true) {
+      list.add('Obat Terlewat');
+    }
+    final adherence = patient['adherence_7d_pct'];
+    if (adherence != null && (adherence as num) < 80) {
+      list.add('Kepatuhan Rendah');
+    }
+    if (list.isEmpty) {
+      list.add('Tidak ada gejala');
+    }
+    return list;
+  }
+
+  // ──────────────────────────────────────────────
+  // Helper: catatan tambahan
+  // ──────────────────────────────────────────────
+  String _additionalNote(Map<String, dynamic> patient) {
+    final hasEmergency = patient['has_emergency_symptom'] == true;
+    final hasMissed = patient['has_missed_medication'] == true;
+    final adherence = patient['adherence_7d_pct'];
+
+    if (hasEmergency) {
+      return '⚠️ Pasien melaporkan gejala darurat. Segera lakukan evaluasi dan konfirmasi kondisi pasien.';
+    }
+    if (hasMissed) {
+      return 'Hubungi pasien untuk memastikan kondisi dan mengingatkan minum obat.';
+    }
+    if (adherence != null && (adherence as num) < 80) {
+      return 'Kepatuhan minum obat perlu ditingkatkan. Berikan edukasi dan motivasi ke pasien.';
+    }
+    return 'Pasien dalam kondisi stabil. Pantau secara rutin.';
+  }
+
+  // ──────────────────────────────────────────────
+  // Helper: inisial
+  // ──────────────────────────────────────────────
+  String _initials(String name) {
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
+
+  // ──────────────────────────────────────────────
+  // BUILD
+  // ──────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,41 +247,21 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-        actions: [
+        actions: const [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: EdgeInsets.only(right: 16),
             child: CircleAvatar(
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=3'),
+              backgroundColor: Color(0xFFE5F0FF),
+              child: Icon(Icons.person, color: Color(0xFF112D4E)),
             ),
           ),
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-          children: [
-            _buildDateCard(),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Text('Daftar Prioritas',
-                    style: GoogleFonts.manrope(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF112D4E),
-                    )),
-                const Spacer(),
-                Text('${_patients.length} pasien',
-                    style: GoogleFonts.manrope(
-                      fontSize: 13,
-                      color: const Color(0xFF5A8DA0),
-                    )),
-              ],
-            ),
-            const SizedBox(height: 14),
-            ..._patients.map((patient) => _buildPatientCard(patient)).toList(),
-            const SizedBox(height: 100),
-          ],
+        child: RefreshIndicator(
+          onRefresh: _loadTriageData,
+          color: const Color(0xFF112D4E),
+          child: _buildBody(),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -191,6 +273,104 @@ class _HomePageState extends State<HomePage> {
         currentIndex: 0,
         onTap: _handleNavTap,
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF112D4E)),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFFC4C6CF)),
+              const SizedBox(height: 16),
+              Text(
+                'Gagal memuat data',
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF112D4E),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  color: const Color(0xFF5A8DA0),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _loadTriageData,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
+      children: [
+        _buildDateCard(),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Text('Daftar Prioritas',
+                style: GoogleFonts.manrope(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF112D4E),
+                )),
+            const Spacer(),
+            Text('${_patients.length} pasien',
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  color: const Color(0xFF5A8DA0),
+                )),
+          ],
+        ),
+        const SizedBox(height: 14),
+        if (_patients.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 48),
+            child: Center(
+              child: Column(
+                children: [
+                  const Icon(Icons.people_outline_rounded,
+                      size: 64, color: Color(0xFFC4C6CF)),
+                  const SizedBox(height: 12),
+                  Text('Belum ada pasien',
+                      style: GoogleFonts.manrope(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF112D4E),
+                      )),
+                  const SizedBox(height: 4),
+                  Text('Tambahkan pasien baru untuk memulai',
+                      style: GoogleFonts.manrope(
+                        fontSize: 13,
+                        color: const Color(0xFF5A8DA0),
+                      )),
+                ],
+              ),
+            ),
+          )
+        else
+          ..._patients.map((patient) => _buildPatientCard(patient)),
+      ],
     );
   }
 
@@ -229,7 +409,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildPatientCard(_PriorityPatient patient) {
+  Widget _buildPatientCard(Map<String, dynamic> patient) {
+    final name = patient['full_name'] as String? ?? 'Pasien';
+    final patientId = patient['patient_id'] as String?;
+    final status = _resolveStatus(patient);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -257,7 +441,7 @@ class _HomePageState extends State<HomePage> {
                 radius: 24,
                 backgroundColor: const Color(0xFFE5F0FF),
                 child: Text(
-                  patient.initials,
+                  _initials(name),
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF112D4E),
@@ -269,14 +453,14 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(patient.name,
+                    Text(name,
                         style: GoogleFonts.manrope(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF112D4E),
                         )),
                     const SizedBox(height: 6),
-                    Text(patient.subtitle,
+                    Text(status.subtitle,
                         style: GoogleFonts.manrope(
                           fontSize: 13,
                           color: const Color(0xFF5A8DA0),
@@ -288,14 +472,14 @@ class _HomePageState extends State<HomePage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: patient.statusColor.withOpacity(0.12),
+                  color: status.color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text(patient.status,
+                child: Text(status.label,
                     style: GoogleFonts.manrope(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: patient.statusColor,
+                      color: status.color,
                     )),
               ),
             ],
@@ -305,19 +489,20 @@ class _HomePageState extends State<HomePage> {
             _buildInfoRow(
               icon: Icons.medication_rounded,
               title: 'Log Harian Terakhir',
-              description: patient.dailyLog,
+              description: _dailyLogText(patient),
             ),
             const SizedBox(height: 14),
-            Text('Gejala Dilaporkan',
+            Text('Gejala Terdeteksi',
                 style: GoogleFonts.manrope(fontWeight: FontWeight.w600, fontSize: 14)),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: patient.symptoms
+              children: _symptoms(patient)
                   .map((symptom) => Chip(
                         visualDensity: VisualDensity.compact,
-                        labelStyle: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF112D4E)),
+                        labelStyle: GoogleFonts.manrope(
+                            fontSize: 12, color: const Color(0xFF112D4E)),
                         backgroundColor: const Color(0xFFEAF2FF),
                         label: Text(symptom),
                       ))
@@ -327,7 +512,7 @@ class _HomePageState extends State<HomePage> {
             _buildInfoRow(
               icon: Icons.note_alt_outlined,
               title: 'Catatan Tambahan',
-              description: patient.note,
+              description: _additionalNote(patient),
             ),
             const SizedBox(height: 20),
             Row(
@@ -338,13 +523,17 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => DoctorFeedbackPage(patientName: patient.name),
+                          builder: (_) => DoctorFeedbackPage(
+                            patientName: name,
+                            patientId: patientId,
+                          ),
                         ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF112D4E),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: const Text('Berikan Feedback'),
@@ -357,13 +546,17 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => PatientDetailPage(patientName: patient.name),
+                          builder: (_) => PatientDetailPage(
+                            patientName: name,
+                            patientId: patientId,
+                          ),
                         ),
                       );
                     },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFFC4C6CF)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: const Text('Detail Pasien'),
@@ -377,7 +570,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildInfoRow({required IconData icon, required String title, required String description}) {
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -404,33 +601,5 @@ class _HomePageState extends State<HomePage> {
         ),
       ],
     );
-  }
-}
-
-class _PriorityPatient {
-  final String name;
-  final String subtitle;
-  final String status;
-  final Color statusColor;
-  final String dailyLog;
-  final List<String> symptoms;
-  final String note;
-
-  _PriorityPatient({
-    required this.name,
-    required this.subtitle,
-    required this.status,
-    required this.statusColor,
-    required this.dailyLog,
-    required this.symptoms,
-    required this.note,
-  });
-
-  String get initials {
-    final parts = name.split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
   }
 }
