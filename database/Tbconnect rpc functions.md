@@ -7,6 +7,38 @@
 
 
 -- ============================================================
+-- RPC: get_upcoming_visits
+-- Ambil jadwal kontrol yang akan datang untuk pasien
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.get_upcoming_visits(
+  p_patient_id UUID
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_result JSONB;
+BEGIN
+  SELECT jsonb_agg(
+    jsonb_build_object(
+      'scheduled_date', cv.scheduled_date,
+      'location',       cv.location,
+      'visit_number',   cv.visit_number,
+      'status',         cv.status
+    ) ORDER BY cv.scheduled_date ASC
+  )
+  INTO v_result
+  FROM public.clinic_visits cv
+  WHERE cv.patient_id = p_patient_id
+    AND cv.status = 'upcoming'
+  LIMIT 1;
+
+  RETURN COALESCE(v_result, '[]'::JSONB);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.get_upcoming_visits IS 'RPC: Ambil jadwal kontrol mendatang untuk pasien (bypass RLS)';
+
+
+-- ============================================================
 -- RPC: log_medication_taken
 -- Dipanggil pasien saat tap "Minum Obat"
 -- Menggunakan server time NOW() — WAJIB untuk hindari manipulasi

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(xargs grep -l \"v_doctor_triage\\\\|getTriageBoard\\\\|priority_level\")",
       "Bash(xargs -I{} find {} -type f -name \"*.dart\")",
-      "Bash(dart analyze *)"
+      "Bash(dart analyze *)",
+      "Bash(dir *)"
     ]
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../services/auth_service.dart';
+import '../../patient/presentation/patient_home_page.dart';
 import 'patient_qr_screen.dart';
 import 'patient_register_screen.dart';
 
@@ -200,13 +201,10 @@ class _PatientLoginScreenState extends State<PatientLoginScreen> {
     )
         .then((session) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Selamat datang, ${session?.fullName ?? 'pasien'}!',
-            style: GoogleFonts.manrope(color: Colors.white),
-          ),
-        ),
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const PatientHomePage()),
+        (route) => false,
       );
     }).catchError((error) {
       if (!mounted) return;
