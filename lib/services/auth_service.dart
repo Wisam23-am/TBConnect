@@ -296,13 +296,15 @@ class PatientDataService {
 
   // ----------------------------------------------------------
   // Get status obat hari ini
+  // RPC returns { success, server_time, sessions: [...] }
   // ----------------------------------------------------------
-  Future<List<Map<String, dynamic>>> getTodayMedications({
+  Future<Map<String, dynamic>> getTodayMedications({
     required String patientId,
   }) async {
-    return await _supabase.rpc('get_today_medication_status', params: {
+    final result = await _supabase.rpc('get_today_medication_status', params: {
       'p_patient_id': patientId,
     });
+    return Map<String, dynamic>.from(result);
   }
 
   // ----------------------------------------------------------
