@@ -203,7 +203,11 @@ class _PatientLoginScreenState extends State<PatientLoginScreen> {
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const PatientHomePage()),
+        MaterialPageRoute(
+            builder: (_) => const PatientHomePage(
+                  initialNavIndex: 3,
+                  allowGuestMode: true,
+                )),
         (route) => false,
       );
     }).catchError((error) {

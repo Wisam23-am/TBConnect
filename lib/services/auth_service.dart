@@ -46,13 +46,13 @@ class PatientSession {
   }
 
   Map<String, dynamic> toJson() => {
-    'patient_id': patientId,
-    'full_name': fullName,
-    'doctor_id': doctorId,
-    'qr_code': qrCode,
-    'treatment_start_date': treatmentStartDate.toIso8601String(),
-    'initial_weight_kg': initialWeightKg,
-  };
+        'patient_id': patientId,
+        'full_name': fullName,
+        'doctor_id': doctorId,
+        'qr_code': qrCode,
+        'treatment_start_date': treatmentStartDate.toIso8601String(),
+        'initial_weight_kg': initialWeightKg,
+      };
 }
 
 // ============================================================
@@ -76,7 +76,7 @@ class AuthService {
       email: email,
       password: password,
       data: {
-        'role': 'doctor',           // Penting! Trigger cek metadata ini
+        'role': 'doctor', // Penting! Trigger cek metadata ini
         'full_name': fullName,
         'str_number': strNumber,
       },
@@ -111,11 +111,8 @@ class AuthService {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return null;
 
-    final response = await _supabase
-        .from('doctors')
-        .select()
-        .eq('id', userId)
-        .single();
+    final response =
+        await _supabase.from('doctors').select().eq('id', userId).single();
     return response;
   }
 
@@ -227,7 +224,6 @@ class AuthService {
   }
 }
 
-
 // ============================================================
 // PATIENT SERVICE
 // Service layer untuk operasi pasien (dipanggil dari Flutter)
@@ -268,14 +264,14 @@ class PatientDataService {
     String? notes,
   }) async {
     await _supabase.rpc('log_daily_symptoms', params: {
-      'p_patient_id':            patientId,
-      'p_nausea_level':          nauseaLevel,
-      'p_dizziness_level':       dizzinessLevel,
-      'p_fatigue_level':         fatigueLevel,
-      'p_hemoptysis':            hemoptysis,
-      'p_chest_pain':            chestPain,
-      'p_shortness_of_breath':   shortnessOfBreath,
-      'p_notes':                 notes,
+      'p_patient_id': patientId,
+      'p_nausea_level': nauseaLevel,
+      'p_dizziness_level': dizzinessLevel,
+      'p_fatigue_level': fatigueLevel,
+      'p_hemoptysis': hemoptysis,
+      'p_chest_pain': chestPain,
+      'p_shortness_of_breath': shortnessOfBreath,
+      'p_notes': notes,
     });
   }
 
@@ -289,8 +285,8 @@ class PatientDataService {
   }) async {
     await _supabase.rpc('log_weight', params: {
       'p_patient_id': patientId,
-      'p_weight_kg':  weightKg,
-      'p_notes':      notes,
+      'p_weight_kg': weightKg,
+      'p_notes': notes,
     });
   }
 
@@ -319,6 +315,21 @@ class PatientDataService {
   }
 
   // ----------------------------------------------------------
+  // Get weight history pasien
+  // ----------------------------------------------------------
+  Future<List<Map<String, dynamic>>> getWeightHistory({
+    required String patientId,
+    int limit = 10,
+  }) async {
+    return await _supabase
+        .from('weight_logs')
+        .select()
+        .eq('patient_id', patientId)
+        .order('log_date', ascending: false)
+        .limit(limit);
+  }
+
+  // ----------------------------------------------------------
   // Request reschedule kunjungan
   // ----------------------------------------------------------
   Future<void> requestReschedule({
@@ -328,14 +339,13 @@ class PatientDataService {
     required String reason,
   }) async {
     await _supabase.rpc('request_visit_reschedule', params: {
-      'p_visit_id':   visitId,
+      'p_visit_id': visitId,
       'p_patient_id': patientId,
-      'p_new_date':   newDate.toIso8601String().split('T').first,
-      'p_reason':     reason,
+      'p_new_date': newDate.toIso8601String().split('T').first,
+      'p_reason': reason,
     });
   }
 }
-
 
 // ============================================================
 // DOCTOR SERVICE
@@ -361,25 +371,36 @@ class DoctorService {
     String? address,
     String? faskesName,
   }) async {
-    final doctorId = _supabase.auth.currentUser!.id;
+    final currentUser = _supabase.auth.currentUser;
+    if (currentUser == null) {
+      throw Exception(
+          'Sesi dokter tidak ditemukan. Silakan login ulang sebelum menambahkan pasien.');
+    }
+
+    final doctorId = currentUser.id;
 
     // Hitung umur secara simpel (bisa disesuaikan jika perlu akurat ke hari)
     final age = DateTime.now().year - birthDate.year;
 
-    final response = await _supabase.from('patients').insert({
-      'doctor_id':            doctorId,
-      'nik':                  nik,
-      'full_name':            fullName,
-      'birth_place':          birthPlace,
-      'birth_date':           birthDate.toIso8601String().split('T').first,
-      'age':                  age,
-      'gender':               gender,
-      'initial_weight_kg':    initialWeightKg,
-      'treatment_start_date': treatmentStartDate.toIso8601String().split('T').first,
-      'phone_number':         phoneNumber,
-      'address':              address,
-      'faskes_name':          faskesName,
-    }).select().single();
+    final response = await _supabase
+        .from('patients')
+        .insert({
+          'doctor_id': doctorId,
+          'nik': nik,
+          'full_name': fullName,
+          'birth_place': birthPlace,
+          'birth_date': birthDate.toIso8601String().split('T').first,
+          'age': age,
+          'gender': gender,
+          'initial_weight_kg': initialWeightKg,
+          'treatment_start_date':
+              treatmentStartDate.toIso8601String().split('T').first,
+          'phone_number': phoneNumber,
+          'address': address,
+          'faskes_name': faskesName,
+        })
+        .select()
+        .single();
 
     // Auto-generate jadwal kunjungan 6 bulan
     await _generateClinicVisits(
@@ -416,11 +437,11 @@ class DoctorService {
         treatmentStartDate.day,
       );
       return {
-        'patient_id':    patientId,
-        'doctor_id':     doctorId,
-        'visit_number':  i + 1,
+        'patient_id': patientId,
+        'doctor_id': doctorId,
+        'visit_number': i + 1,
         'scheduled_date': visitDate.toIso8601String().split('T').first,
-        'location':      location,
+        'location': location,
       };
     });
 
@@ -445,18 +466,14 @@ class DoctorService {
   // Get detail pasien lengkap
   // ----------------------------------------------------------
   Future<Map<String, dynamic>> getPatientDetail(String patientId) async {
-    final patient = await _supabase
-        .from('patients')
-        .select('''
+    final patient = await _supabase.from('patients').select('''
           *,
           medication_logs(log_date, session, status, taken_at),
           symptom_logs(log_date, nausea_level, dizziness_level, fatigue_level, hemoptysis, chest_pain, is_emergency),
           weight_logs(log_date, weight_kg, day_of_treatment),
           clinic_visits(visit_number, scheduled_date, location, status, reschedule_requested),
           doctor_feedbacks(message, is_urgent, created_at)
-        ''')
-        .eq('id', patientId)
-        .single();
+        ''').eq('id', patientId).single();
     return patient;
   }
 
@@ -470,18 +487,19 @@ class DoctorService {
   }) async {
     final doctorId = _supabase.auth.currentUser!.id;
     await _supabase.from('doctor_feedbacks').insert({
-      'doctor_id':  doctorId,
+      'doctor_id': doctorId,
       'patient_id': patientId,
-      'message':    message,
-      'is_urgent':  isUrgent,
+      'message': message,
+      'is_urgent': isUrgent,
     });
 
     // Insert notifikasi ke pasien
     await _supabase.from('notifications').insert({
       'patient_id': patientId,
-      'type':       'doctor_feedback',
-      'title':      isUrgent ? '⚠️ Pesan Penting dari Dokter' : 'Pesan dari Dokter',
-      'body':       message.length > 100 ? '${message.substring(0, 100)}...' : message,
+      'type': 'doctor_feedback',
+      'title': isUrgent ? '⚠️ Pesan Penting dari Dokter' : 'Pesan dari Dokter',
+      'body':
+          message.length > 100 ? '${message.substring(0, 100)}...' : message,
     });
   }
 
