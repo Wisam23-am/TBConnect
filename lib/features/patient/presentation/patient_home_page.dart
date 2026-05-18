@@ -3,24 +3,28 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/auth_service.dart';
+import '../../../widgets/patient_bottom_nav_bar.dart';
 import '../../auth/presentation/patient_login_screen.dart';
+import 'patient_symptoms_page.dart';
+import 'patient_weight_input_page.dart';
+import 'patient_weight_progress_page.dart';
 
 // ---------------------------------------------------------------------------
 // Medication slot status  (mirrors RPC return values)
 // ---------------------------------------------------------------------------
 enum MedicationStatus {
-  completed,   // 'taken'
-  active,      // 'active'
-  late,        // 'late'
-  missed,      // 'missed'
-  locked,      // 'locked'
+  completed, // 'taken'
+  active, // 'active'
+  late, // 'late'
+  missed, // 'missed'
+  locked, // 'locked'
 }
 
 // ---------------------------------------------------------------------------
 // Data model for one medication slot
 // ---------------------------------------------------------------------------
 class _MedicationSlot {
-  final String session;   // 'morning' | 'afternoon' | 'evening'
+  final String session; // 'morning' | 'afternoon' | 'evening'
   final String label;
   final String timeRange;
   final List<String> medications;
@@ -41,7 +45,11 @@ class _MedicationSlot {
 // Main screen  –  fully integrated with Supabase
 // ---------------------------------------------------------------------------
 class PatientHomePage extends StatefulWidget {
-  const PatientHomePage({super.key});
+  const PatientHomePage(
+      {super.key, this.initialNavIndex = 0, this.allowGuestMode = false});
+
+  final int initialNavIndex;
+  final bool allowGuestMode;
 
   @override
   State<PatientHomePage> createState() => _PatientHomePageState();
@@ -52,7 +60,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
   final _patientService = PatientDataService();
   final _supabase = Supabase.instance.client; // untuk RPC calls
 
-  int _selectedNavIndex = 0;
+  late int _selectedNavIndex;
 
   // ── Session & data ──
   PatientSession? _session;
@@ -62,21 +70,47 @@ class _PatientHomePageState extends State<PatientHomePage> {
   bool _isLoading = true;
   bool _isRefreshing = false;
   String? _error;
+  final Map<String, DateTime> _guestConfirmedAt = {};
 
   // Medication names per session – bisa diperkaya dari DB nanti
   // ── Indonesian day/month names (avoid locale init issues) ──
   static const _dayNames = [
-    'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu',
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
   ];
   static const _monthNames = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
   ];
 
   static const Map<String, List<String>> _defaultMeds = {
-    'morning':   ['Isoniazid, Rifampicin, Pyrazinamide', 'Ethambutol (Total 4 Tablet)'],
-    'afternoon': ['Isoniazid, Rifampicin, Pyrazinamide', 'Ethambutol (Total 4 Tablet)'],
-    'evening':   ['Isoniazid, Rifampicin, Pyrazinamide', 'Ethambutol (Total 4 Tablet)'],
+    'morning': [
+      'Isoniazid, Rifampicin, Pyrazinamide',
+      'Ethambutol (Total 4 Tablet)'
+    ],
+    'afternoon': [
+      'Isoniazid, Rifampicin, Pyrazinamide',
+      'Ethambutol (Total 4 Tablet)'
+    ],
+    'evening': [
+      'Isoniazid, Rifampicin, Pyrazinamide',
+      'Ethambutol (Total 4 Tablet)'
+    ],
   };
 
   // ────────────────────────────────────────────────────────────────────────
@@ -85,6 +119,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
   @override
   void initState() {
     super.initState();
+    _selectedNavIndex = widget.initialNavIndex.clamp(0, 3);
     _loadData();
   }
 
@@ -95,13 +130,42 @@ class _PatientHomePageState extends State<PatientHomePage> {
       // 1. Ambil session pasien dari SharedPreferences
       final session = await _authService.getPatientSession();
       if (session == null) {
-        if (mounted) _redirectToLogin();
+        if (!widget.allowGuestMode) {
+          if (mounted) _redirectToLogin();
+          return;
+        }
+
+        if (mounted) {
+          setState(() {
+            _session = PatientSession(
+              patientId: 'guest',
+              fullName: 'Pasien',
+              doctorId: '-',
+              qrCode: '-',
+              treatmentStartDate: DateTime.now(),
+              initialWeightKg: 0,
+            );
+            _slots = _buildGuestMedicationSlots(_guestConfirmedAt);
+            _treatmentStartDate = DateTime.now();
+            _nextVisit = {
+              'scheduled_date': DateTime.now()
+                  .add(const Duration(days: 5))
+                  .toIso8601String()
+                  .split('T')
+                  .first,
+              'location': 'RSUD Dr. Soetomo',
+            };
+            _isLoading = false;
+            _isRefreshing = false;
+            _error = null;
+          });
+        }
         return;
       }
 
       // 2. Status obat hari ini dari RPC (SECURITY DEFINER → bypass RLS)
-      final medResult =
-          await _patientService.getTodayMedications(patientId: session.patientId);
+      final medResult = await _patientService.getTodayMedications(
+          patientId: session.patientId);
       final sessions =
           List<Map<String, dynamic>>.from(medResult['sessions'] ?? []);
 
@@ -141,6 +205,83 @@ class _PatientHomePageState extends State<PatientHomePage> {
         });
       }
     }
+  }
+
+  List<_MedicationSlot> _buildGuestMedicationSlots(
+      [Map<String, DateTime> confirmedAt = const {}]) {
+    return [
+      _buildGuestSlot(
+        session: 'morning',
+        label: 'Pagi',
+        startHour: 6,
+        endHour: 9,
+        confirmedAt: confirmedAt['morning'],
+      ),
+      _buildGuestSlot(
+        session: 'afternoon',
+        label: 'Siang',
+        startHour: 13,
+        endHour: 15,
+        confirmedAt: confirmedAt['afternoon'],
+      ),
+      _buildGuestSlot(
+        session: 'evening',
+        label: 'Malam',
+        startHour: 18,
+        endHour: 21,
+        confirmedAt: confirmedAt['evening'],
+      ),
+    ];
+  }
+
+  _MedicationSlot _buildGuestSlot({
+    required String session,
+    required String label,
+    required int startHour,
+    required int endHour,
+    DateTime? confirmedAt,
+  }) {
+    final now = DateTime.now();
+    final status = _resolveGuestStatus(
+      now: now,
+      startHour: startHour,
+      endHour: endHour,
+      confirmedAt: confirmedAt,
+    );
+
+    return _MedicationSlot(
+      session: session,
+      label: label,
+      timeRange:
+          '${startHour.toString().padLeft(2, '0')}:00 - ${endHour.toString().padLeft(2, '0')}:00',
+      medications: const [
+        'Isoniazid, Rifampicin, Pyrazinamide',
+        'Ethambutol (Total 4 Tablet)',
+      ],
+      status: status,
+      takenAt: confirmedAt,
+    );
+  }
+
+  MedicationStatus _resolveGuestStatus({
+    required DateTime now,
+    required int startHour,
+    required int endHour,
+    DateTime? confirmedAt,
+  }) {
+    if (confirmedAt != null) {
+      return confirmedAt.hour >= endHour
+          ? MedicationStatus.late
+          : MedicationStatus.completed;
+    }
+
+    if (now.hour < startHour) {
+      return MedicationStatus.locked;
+    }
+    if (now.hour >= startHour && now.hour < endHour) {
+      return MedicationStatus.active;
+    }
+    return MedicationStatus.missed;
   }
 
   void _redirectToLogin() {
@@ -204,6 +345,29 @@ class _PatientHomePageState extends State<PatientHomePage> {
   Future<void> _confirmMedication(_MedicationSlot slot) async {
     if (_session == null) return;
 
+    if (_session!.patientId == 'guest') {
+      setState(() {
+        _guestConfirmedAt[slot.session] = DateTime.now();
+        _slots = _buildGuestMedicationSlots(_guestConfirmedAt);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✅ Obat ${slot.label.toLowerCase()} berhasil dicatat',
+              style: GoogleFonts.manrope(color: Colors.white),
+            ),
+            backgroundColor: const Color(0xFF2E7D32),
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+      return;
+    }
+
     try {
       await _patientService.logMedication(
         patientId: _session!.patientId,
@@ -219,7 +383,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
             ),
             backgroundColor: const Color(0xFF2E7D32),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
         _loadData(); // refresh
@@ -236,85 +401,40 @@ class _PatientHomePageState extends State<PatientHomePage> {
     }
   }
 
-  Future<void> _showWeightDialog() async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    final weight = await showDialog<double>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Input Berat Badan',
-            style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Berat badan (kg)',
-              hintText: 'Contoh: 55.5',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              suffixText: 'kg',
-            ),
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Wajib diisi';
-              if (double.tryParse(v) == null) return 'Format angka salah';
-              return null;
-            },
-          ),
+  Future<void> _navigateToWeightInput() async {
+    if (mounted) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (ctx) => const PatientWeightInputPage(),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(ctx, double.parse(controller.text.trim()));
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF001833),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
-    );
+      );
 
-    if (weight != null && _session != null) {
-      try {
-        await _patientService.logWeight(
-          patientId: _session!.patientId,
-          weightKg: weight,
-        );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ Berat badan $weight kg tersimpan',
-                  style: GoogleFonts.manrope(color: Colors.white)),
-              backgroundColor: const Color(0xFF2E7D32),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Gagal: $e'),
-                backgroundColor: Colors.redAccent),
-          );
-        }
-      }
+      // Refresh data setelah kembali dari halaman berat badan
+      _loadData();
     }
+  }
+
+  void _handleBottomNavTap(int index) {
+    if (index == _selectedNavIndex) return;
+
+    if (index == 1) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const PatientSymptomsPage()),
+      );
+      return;
+    }
+
+    if (index == 2) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const PatientWeightProgressPage()),
+      );
+      return;
+    }
+
+    setState(() => _selectedNavIndex = index);
   }
 
   Future<void> _showLateReasonDialog(_MedicationSlot slot) async {
@@ -406,6 +526,113 @@ class _PatientHomePageState extends State<PatientHomePage> {
     );
   }
 
+  Widget _buildDetailView() {
+    final session = _session;
+
+    if (session == null) {
+      return const Center(
+          child: CircularProgressIndicator(color: Color(0xFF112D4E)));
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      color: const Color(0xFF112D4E),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_isRefreshing)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: LinearProgressIndicator(
+                  minHeight: 2,
+                  backgroundColor: Color(0xFFE5F0FF),
+                  color: Color(0xFF112D4E),
+                ),
+              ),
+            Text(
+              'Profil Pasien',
+              style: GoogleFonts.manrope(
+                color: const Color(0xFF001833),
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Detail informasi pasien dan data klinis terkait.',
+              style: GoogleFonts.manrope(
+                color: const Color(0xFF43474E),
+                fontSize: 13,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(height: 18),
+            _DetailCard(
+              icon: Icons.person_outline_rounded,
+              title: 'Data Pasien',
+              children: [
+                _DetailRow(label: 'Nama Lengkap', value: session.fullName),
+                _DetailRow(
+                  label: 'Tanggal Lahir',
+                  value: _sessionDateLabel(session.treatmentStartDate),
+                  showDivider: false,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _DetailCard(
+              icon: Icons.medical_services_outlined,
+              title: 'Informasi Klinik',
+              children: [
+                _DetailRow(
+                    label: 'Nama Rumah Sakit',
+                    value: _clinicNameFromSession(session)),
+                _DetailRow(
+                    label: 'Nama Dokter',
+                    value: _doctorNameFromSession(session)),
+                _DetailRow(
+                  label: 'Tanggal Masuk',
+                  value: _formatDate(session.treatmentStartDate),
+                  showDivider: false,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  await _authService.logoutPatient();
+                  if (mounted) _redirectToLogin();
+                },
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text('Keluar Akun'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _sessionDateLabel(DateTime date) {
+    return _formatDate(date);
+  }
+
+  String _clinicNameFromSession(PatientSession session) {
+    if (session.doctorId == 'guest') return 'Klinik / Rumah Sakit';
+    return 'RSUD Dr. Soetomo';
+  }
+
+  String _doctorNameFromSession(PatientSession session) {
+    if (session.doctorId == 'guest') return 'Dokter Pembina';
+    return 'Dr. Siti Aminah, Sp.P';
+  }
+
   // ────────────────────────────────────────────────────────────────────────
   // BUILD
   // ────────────────────────────────────────────────────────────────────────
@@ -420,50 +647,52 @@ class _PatientHomePageState extends State<PatientHomePage> {
               )
             : _error != null
                 ? _buildError()
-                : RefreshIndicator(
-                    onRefresh: _loadData,
-                    color: const Color(0xFF112D4E),
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(
-                          top: 24, left: 24, right: 24, bottom: 100),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_isRefreshing)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 8),
-                              child: LinearProgressIndicator(
-                                minHeight: 2,
-                                backgroundColor: Color(0xFFE5F0FF),
-                                color: Color(0xFF112D4E),
-                              ),
-                            ),
-                          _buildHeader(),
-                          const SizedBox(height: 24),
-                          _buildScheduleHeader(),
-                          const SizedBox(height: 16),
-                          _buildProgressCard(),
-                          const SizedBox(height: 16),
-                          if (_nextVisit != null) ...[
-                            _buildControlReminder(),
-                            const SizedBox(height: 24),
-                          ],
-                          ..._slots.map((slot) => Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _MedicationCard(
-                                  slot: slot,
-                                  onConfirm: () => _confirmMedication(slot),
-                                  onLateReason: () =>
-                                      _showLateReasonDialog(slot),
+                : _selectedNavIndex == 3
+                    ? _buildDetailView()
+                    : RefreshIndicator(
+                        onRefresh: _loadData,
+                        color: const Color(0xFF112D4E),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(
+                              top: 24, left: 24, right: 24, bottom: 100),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_isRefreshing)
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 8),
+                                  child: LinearProgressIndicator(
+                                    minHeight: 2,
+                                    backgroundColor: Color(0xFFE5F0FF),
+                                    color: Color(0xFF112D4E),
+                                  ),
                                 ),
-                              )),
-                          const SizedBox(height: 8),
-                          _buildWeightCard(),
-                        ],
+                              _buildHeader(),
+                              const SizedBox(height: 24),
+                              _buildScheduleHeader(),
+                              const SizedBox(height: 16),
+                              _buildProgressCard(),
+                              const SizedBox(height: 16),
+                              if (_nextVisit != null) ...[
+                                _buildControlReminder(),
+                                const SizedBox(height: 24),
+                              ],
+                              ..._slots.map((slot) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: _MedicationCard(
+                                      slot: slot,
+                                      onConfirm: () => _confirmMedication(slot),
+                                      onLateReason: () =>
+                                          _showLateReasonDialog(slot),
+                                    ),
+                                  )),
+                              const SizedBox(height: 8),
+                              _buildWeightCard(),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
       ),
       bottomNavigationBar: _buildBottomNav(),
     );
@@ -609,7 +838,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
               value: progress,
               minHeight: 12,
               backgroundColor: const Color(0xFFEDEEEF),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2A609C)),
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFF2A609C)),
             ),
           ),
         ],
@@ -738,7 +968,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
             ],
           ),
           GestureDetector(
-            onTap: _showWeightDialog,
+            onTap: _navigateToWeightInput,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
@@ -771,51 +1001,114 @@ class _PatientHomePageState extends State<PatientHomePage> {
   // Bottom navigation  (4 items as in the mockup)
   // ──────────────────────────────────────────────────────────────
   Widget _buildBottomNav() {
+    return PatientBottomNavBar(
+      currentIndex: _selectedNavIndex,
+      onTap: _handleBottomNavTap,
+    );
+  }
+}
+
+class _DetailCard extends StatelessWidget {
+  const _DetailCard({
+    required this.icon,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFFDBE2EF), width: 1)),
-        boxShadow: [
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
           BoxShadow(
-            color: Color(0x0A112D4E),
-            blurRadius: 20,
-            offset: Offset(0, -4),
+            color: Color(0x0C112D4E),
+            blurRadius: 24,
+            offset: Offset(0, 6),
           ),
         ],
       ),
-      child: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedNavIndex,
-        selectedItemColor: const Color(0xFF112D4E),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedLabelStyle: GoogleFonts.manrope(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-        ),
-        unselectedLabelStyle: GoogleFonts.manrope(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-        ),
-        onTap: (i) => setState(() => _selectedNavIndex = i),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: const Color(0xFF2A609C), size: 26),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: GoogleFonts.manrope(
+                  color: const Color(0xFF001833),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.track_changes_rounded),
-            label: 'Tracker',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.trending_up_rounded),
-            label: 'Progress',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline_rounded),
-            label: 'Chat',
-          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
+          const SizedBox(height: 10),
+          ...children,
         ],
       ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    this.showDivider = true,
+  });
+
+  final String label;
+  final String value;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            label.toUpperCase(),
+            style: GoogleFonts.manrope(
+              color: const Color(0xFF6B7280),
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: GoogleFonts.manrope(
+              color: const Color(0xFF1F2937),
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              height: 1.15,
+            ),
+          ),
+        ),
+        if (showDivider) ...[
+          const SizedBox(height: 10),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
+          const SizedBox(height: 10),
+        ],
+      ],
     );
   }
 }
@@ -940,7 +1233,8 @@ class _ActiveCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _HeaderRow(label: slot.label, timeRange: slot.timeRange, dark: true),
+                _HeaderRow(
+                    label: slot.label, timeRange: slot.timeRange, dark: true),
                 const SizedBox(height: 16),
                 // medication list
                 ...slot.medications.map(
@@ -1049,7 +1343,8 @@ class _LateCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _HeaderRow(label: slot.label, timeRange: slot.timeRange, dark: true),
+                _HeaderRow(
+                    label: slot.label, timeRange: slot.timeRange, dark: true),
                 const SizedBox(height: 16),
                 ...slot.medications.map(
                   (med) => Padding(
@@ -1157,7 +1452,8 @@ class _MissedCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _HeaderRow(label: slot.label, timeRange: slot.timeRange, dark: true),
+                _HeaderRow(
+                    label: slot.label, timeRange: slot.timeRange, dark: true),
                 const SizedBox(height: 16),
                 ...slot.medications.map(
                   (med) => Padding(
