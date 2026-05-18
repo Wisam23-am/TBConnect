@@ -49,7 +49,7 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
         setState(() {
           _weightLogs = logs;
           _currentWeek = _calculateWeekLabel(
-              DateTime.tryParse(logs.first['recorded_at'] as String? ?? ''));
+              DateTime.tryParse(logs.first['log_date'] as String? ?? ''));
         });
       }
     } catch (e) {
@@ -354,7 +354,7 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
                               final log = _weightLogs[i];
                               final weight =
                                   (log['weight_kg'] as num).toDouble();
-                              final date = log['recorded_at'] as String? ?? '';
+                              final date = log['log_date'] as String? ?? '';
 
                               return Container(
                                 margin: EdgeInsets.only(
