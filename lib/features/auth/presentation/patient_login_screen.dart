@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../services/auth_service.dart';
-import '../../patient/presentation/patient_home_page.dart';
+import '../../patient/presentation/patient_shell.dart';
 import 'patient_qr_screen.dart';
 import 'patient_register_screen.dart';
 
@@ -204,10 +204,7 @@ class _PatientLoginScreenState extends State<PatientLoginScreen> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-            builder: (_) => const PatientHomePage(
-                  initialNavIndex: 3,
-                  allowGuestMode: true,
-                )),
+            builder: (_) => const PatientShell(initialIndex: 0)),
         (route) => false,
       );
     }).catchError((error) {

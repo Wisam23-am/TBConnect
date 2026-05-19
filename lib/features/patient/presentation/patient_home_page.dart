@@ -3,11 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/auth_service.dart';
-import '../../../widgets/patient_bottom_nav_bar.dart';
-import '../../auth/presentation/patient_login_screen.dart';
-import 'patient_symptoms_page.dart';
+import '../../../services/patient_service.dart';
+import '../../auth/presentation/portal_role_screen.dart';
 import 'patient_weight_input_page.dart';
-import 'patient_weight_progress_page.dart';
 
 // ---------------------------------------------------------------------------
 // Medication slot status  (mirrors RPC return values)
@@ -30,6 +28,7 @@ class _MedicationSlot {
   final List<String> medications;
   final MedicationStatus status;
   final DateTime? takenAt;
+  final String? lateReason;
 
   const _MedicationSlot({
     required this.session,
@@ -38,6 +37,7 @@ class _MedicationSlot {
     required this.medications,
     required this.status,
     this.takenAt,
+    this.lateReason,
   });
 }
 
@@ -45,10 +45,8 @@ class _MedicationSlot {
 // Main screen  –  fully integrated with Supabase
 // ---------------------------------------------------------------------------
 class PatientHomePage extends StatefulWidget {
-  const PatientHomePage(
-      {super.key, this.initialNavIndex = 0, this.allowGuestMode = false});
+  const PatientHomePage({super.key, this.allowGuestMode = false});
 
-  final int initialNavIndex;
   final bool allowGuestMode;
 
   @override
@@ -60,8 +58,6 @@ class _PatientHomePageState extends State<PatientHomePage> {
   final _patientService = PatientDataService();
   final _supabase = Supabase.instance.client; // untuk RPC calls
 
-  late int _selectedNavIndex;
-
   // ── Session & data ──
   PatientSession? _session;
   List<_MedicationSlot> _slots = [];
@@ -71,6 +67,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
   bool _isRefreshing = false;
   String? _error;
   final Map<String, DateTime> _guestConfirmedAt = {};
+  final Set<String> _justConfirmedSessions = {}; // tracked locally for instant visual feedback
 
   // Medication names per session – bisa diperkaya dari DB nanti
   // ── Indonesian day/month names (avoid locale init issues) ──
@@ -119,7 +116,6 @@ class _PatientHomePageState extends State<PatientHomePage> {
   @override
   void initState() {
     super.initState();
-    _selectedNavIndex = widget.initialNavIndex.clamp(0, 3);
     _loadData();
   }
 
@@ -131,7 +127,13 @@ class _PatientHomePageState extends State<PatientHomePage> {
       final session = await _authService.getPatientSession();
       if (session == null) {
         if (!widget.allowGuestMode) {
-          if (mounted) _redirectToLogin();
+          if (mounted) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const PortalRoleScreen()),
+              (route) => false,
+            );
+          }
           return;
         }
 
@@ -269,10 +271,11 @@ class _PatientHomePageState extends State<PatientHomePage> {
     required int endHour,
     DateTime? confirmedAt,
   }) {
+    // Jika sudah dikonfirmasi (baik tepat waktu maupun telat),
+    // tampilkan sebagai completed. Alasan keterlambatan sudah
+    // dicatat terpisah melalui dialog.
     if (confirmedAt != null) {
-      return confirmedAt.hour >= endHour
-          ? MedicationStatus.late
-          : MedicationStatus.completed;
+      return MedicationStatus.completed;
     }
 
     if (now.hour < startHour) {
@@ -282,14 +285,6 @@ class _PatientHomePageState extends State<PatientHomePage> {
       return MedicationStatus.active;
     }
     return MedicationStatus.missed;
-  }
-
-  void _redirectToLogin() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientLoginScreen()),
-      (route) => false,
-    );
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -320,6 +315,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
       medications: _defaultMeds[session] ?? [],
       status: _fromRpcStatus(s['status'] as String? ?? 'locked'),
       takenAt: s['taken_at'] != null ? DateTime.tryParse(s['taken_at']) : null,
+      lateReason: s['late_reason'] as String?,
     );
   }
 
@@ -342,7 +338,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
   // Actions  (DB write)
   // ────────────────────────────────────────────────────────────────────────
 
-  Future<void> _confirmMedication(_MedicationSlot slot) async {
+  Future<void> _confirmMedication(_MedicationSlot slot, {String? reason}) async {
     if (_session == null) return;
 
     if (_session!.patientId == 'guest') {
@@ -372,7 +368,14 @@ class _PatientHomePageState extends State<PatientHomePage> {
       await _patientService.logMedication(
         patientId: _session!.patientId,
         session: slot.session,
+        reason: reason,
       );
+
+      // Track locally so the card instantly shows as completed
+      // even if the server RPC still returns 'late' status.
+      setState(() {
+        _justConfirmedSessions.add(slot.session);
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -415,28 +418,6 @@ class _PatientHomePageState extends State<PatientHomePage> {
     }
   }
 
-  void _handleBottomNavTap(int index) {
-    if (index == _selectedNavIndex) return;
-
-    if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const PatientSymptomsPage()),
-      );
-      return;
-    }
-
-    if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const PatientWeightProgressPage()),
-      );
-      return;
-    }
-
-    setState(() => _selectedNavIndex = index);
-  }
-
   Future<void> _showLateReasonDialog(_MedicationSlot slot) async {
     final controller = TextEditingController();
     final reason = await showDialog<String>(
@@ -471,8 +452,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
     );
 
     if (reason != null && reason.isNotEmpty) {
-      // Log medication taken (status will be 'late' from server)
-      await _confirmMedication(slot);
+      // Log medication taken with the late reason attached
+      await _confirmMedication(slot, reason: reason);
     }
   }
 
@@ -516,9 +497,16 @@ class _PatientHomePageState extends State<PatientHomePage> {
             TextButton(
               onPressed: () async {
                 await _authService.logoutPatient();
-                if (mounted) _redirectToLogin();
+                if (mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PortalRoleScreen()),
+                    (route) => false,
+                  );
+                }
               },
-              child: const Text('Login Ulang'),
+              child: const Text('Kembali ke Halaman Awal'),
             ),
           ],
         ),
@@ -526,12 +514,19 @@ class _PatientHomePageState extends State<PatientHomePage> {
     );
   }
 
-  Widget _buildDetailView() {
-    final session = _session;
-
-    if (session == null) {
+  // ────────────────────────────────────────────────────────────────────────
+  // BUILD  –  home content only (no profile, no bottom nav)
+  // ────────────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: Color(0xFF112D4E)));
+        child: CircularProgressIndicator(color: Color(0xFF112D4E)),
+      );
+    }
+
+    if (_error != null) {
+      return _buildError();
     }
 
     return RefreshIndicator(
@@ -539,7 +534,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
       color: const Color(0xFF112D4E),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+        padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -552,149 +547,46 @@ class _PatientHomePageState extends State<PatientHomePage> {
                   color: Color(0xFF112D4E),
                 ),
               ),
-            Text(
-              'Profil Pasien',
-              style: GoogleFonts.manrope(
-                color: const Color(0xFF001833),
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Detail informasi pasien dan data klinis terkait.',
-              style: GoogleFonts.manrope(
-                color: const Color(0xFF43474E),
-                fontSize: 13,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 18),
-            _DetailCard(
-              icon: Icons.person_outline_rounded,
-              title: 'Data Pasien',
-              children: [
-                _DetailRow(label: 'Nama Lengkap', value: session.fullName),
-                _DetailRow(
-                  label: 'Tanggal Lahir',
-                  value: _sessionDateLabel(session.treatmentStartDate),
-                  showDivider: false,
-                ),
-              ],
-            ),
+            _buildHeader(),
+            const SizedBox(height: 24),
+            _buildScheduleHeader(),
             const SizedBox(height: 16),
-            _DetailCard(
-              icon: Icons.medical_services_outlined,
-              title: 'Informasi Klinik',
-              children: [
-                _DetailRow(
-                    label: 'Nama Rumah Sakit',
-                    value: _clinicNameFromSession(session)),
-                _DetailRow(
-                    label: 'Nama Dokter',
-                    value: _doctorNameFromSession(session)),
-                _DetailRow(
-                  label: 'Tanggal Masuk',
-                  value: _formatDate(session.treatmentStartDate),
-                  showDivider: false,
+            _buildProgressCard(),
+            const SizedBox(height: 16),
+            if (_nextVisit != null) ...[
+              _buildControlReminder(),
+              const SizedBox(height: 24),
+            ],
+            ..._slots.map((slot) {
+              // Override status if user just confirmed this session
+              // (instant visual feedback before server refresh)
+              final effectiveStatus =
+                  _justConfirmedSessions.contains(slot.session)
+                      ? MedicationStatus.completed
+                      : slot.status;
+              final effectiveSlot = _MedicationSlot(
+                session: slot.session,
+                label: slot.label,
+                timeRange: slot.timeRange,
+                medications: slot.medications,
+                status: effectiveStatus,
+                takenAt: slot.takenAt,
+                lateReason: slot.lateReason,
+              );
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _MedicationCard(
+                  slot: effectiveSlot,
+                  onConfirm: () => _confirmMedication(slot),
+                  onLateReason: () => _showLateReasonDialog(slot),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  await _authService.logoutPatient();
-                  if (mounted) _redirectToLogin();
-                },
-                icon: const Icon(Icons.logout_rounded),
-                label: const Text('Keluar Akun'),
-              ),
-            ),
+              );
+            }),
+            const SizedBox(height: 8),
+            _buildWeightCard(),
           ],
         ),
       ),
-    );
-  }
-
-  String _sessionDateLabel(DateTime date) {
-    return _formatDate(date);
-  }
-
-  String _clinicNameFromSession(PatientSession session) {
-    if (session.doctorId == 'guest') return 'Klinik / Rumah Sakit';
-    return 'RSUD Dr. Soetomo';
-  }
-
-  String _doctorNameFromSession(PatientSession session) {
-    if (session.doctorId == 'guest') return 'Dokter Pembina';
-    return 'Dr. Siti Aminah, Sp.P';
-  }
-
-  // ────────────────────────────────────────────────────────────────────────
-  // BUILD
-  // ────────────────────────────────────────────────────────────────────────
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF112D4E)),
-              )
-            : _error != null
-                ? _buildError()
-                : _selectedNavIndex == 3
-                    ? _buildDetailView()
-                    : RefreshIndicator(
-                        onRefresh: _loadData,
-                        color: const Color(0xFF112D4E),
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.only(
-                              top: 24, left: 24, right: 24, bottom: 100),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (_isRefreshing)
-                                const Padding(
-                                  padding: EdgeInsets.only(bottom: 8),
-                                  child: LinearProgressIndicator(
-                                    minHeight: 2,
-                                    backgroundColor: Color(0xFFE5F0FF),
-                                    color: Color(0xFF112D4E),
-                                  ),
-                                ),
-                              _buildHeader(),
-                              const SizedBox(height: 24),
-                              _buildScheduleHeader(),
-                              const SizedBox(height: 16),
-                              _buildProgressCard(),
-                              const SizedBox(height: 16),
-                              if (_nextVisit != null) ...[
-                                _buildControlReminder(),
-                                const SizedBox(height: 24),
-                              ],
-                              ..._slots.map((slot) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 16),
-                                    child: _MedicationCard(
-                                      slot: slot,
-                                      onConfirm: () => _confirmMedication(slot),
-                                      onLateReason: () =>
-                                          _showLateReasonDialog(slot),
-                                    ),
-                                  )),
-                              const SizedBox(height: 8),
-                              _buildWeightCard(),
-                            ],
-                          ),
-                        ),
-                      ),
-      ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -996,126 +888,29 @@ class _PatientHomePageState extends State<PatientHomePage> {
       ),
     );
   }
-
-  // ──────────────────────────────────────────────────────────────
-  // Bottom navigation  (4 items as in the mockup)
-  // ──────────────────────────────────────────────────────────────
-  Widget _buildBottomNav() {
-    return PatientBottomNavBar(
-      currentIndex: _selectedNavIndex,
-      onTap: _handleBottomNavTap,
-    );
-  }
-}
-
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({
-    required this.icon,
-    required this.title,
-    required this.children,
-  });
-
-  final IconData icon;
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C112D4E),
-            blurRadius: 24,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: const Color(0xFF2A609C), size: 26),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: GoogleFonts.manrope(
-                  color: const Color(0xFF001833),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.4,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
-          const SizedBox(height: 10),
-          ...children,
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    this.showDivider = true,
-  });
-
-  final String label;
-  final String value;
-  final bool showDivider;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            label.toUpperCase(),
-            style: GoogleFonts.manrope(
-              color: const Color(0xFF6B7280),
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            value,
-            style: GoogleFonts.manrope(
-              color: const Color(0xFF1F2937),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 1.15,
-            ),
-          ),
-        ),
-        if (showDivider) ...[
-          const SizedBox(height: 10),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
-          const SizedBox(height: 10),
-        ],
-      ],
-    );
-  }
 }
 
 // ===========================================================================
 // Medication card – renders differently based on MedicationStatus
+// Clean OOP: uses a shared card shell with Strategy-like button injection
 // ===========================================================================
+
+/// Shared visual properties for each card variant.
+class _CardVariant {
+  final Color accentColor;
+  final Color borderColor;
+  final List<BoxShadow> shadows;
+  final Color? bgColor;
+
+  const _CardVariant({
+    required this.accentColor,
+    required this.borderColor,
+    required this.shadows,
+    this.bgColor,
+  });
+}
+
+/// Shared card shell – every variant uses this same layout.
 class _MedicationCard extends StatelessWidget {
   final _MedicationSlot slot;
   final VoidCallback? onConfirm;
@@ -1127,47 +922,113 @@ class _MedicationCard extends StatelessWidget {
     this.onLateReason,
   });
 
+  static const _cardVariants = {
+    MedicationStatus.completed: _CardVariant(
+      accentColor: Color(0xFF2A609C),
+      borderColor: Color(0x4CC4C6CF),
+      shadows: [
+        BoxShadow(
+          color: Color(0x0C000000),
+          blurRadius: 2,
+          offset: Offset(0, 1),
+        ),
+      ],
+    ),
+    MedicationStatus.active: _CardVariant(
+      accentColor: Color(0xFF001833),
+      borderColor: Color(0xFF001833),
+      shadows: [
+        BoxShadow(
+          color: Color(0x14001833),
+          blurRadius: 30,
+          offset: Offset(0, 8),
+        ),
+      ],
+    ),
+    MedicationStatus.late: _CardVariant(
+      accentColor: Color(0xFFE4A700),
+      borderColor: Color(0xFFE19200),
+      shadows: [
+        BoxShadow(
+          color: Color(0x14001833),
+          blurRadius: 30,
+          offset: Offset(0, 8),
+        ),
+      ],
+    ),
+    MedicationStatus.missed: _CardVariant(
+      accentColor: Color(0xFFC50000),
+      borderColor: Color(0xFFA60000),
+      shadows: [
+        BoxShadow(
+          color: Color(0x14001833),
+          blurRadius: 30,
+          offset: Offset(0, 8),
+        ),
+      ],
+    ),
+    MedicationStatus.locked: _CardVariant(
+      accentColor: Color(0xFF43474E),
+      borderColor: Color(0xFFE1E3E4),
+      shadows: [],
+      bgColor: Color(0xFFF8F9FA),
+    ),
+  };
+
   @override
   Widget build(BuildContext context) {
+    // If medication was already taken, always show as completed
+    if (slot.takenAt != null) {
+      return _buildCompleted();
+    }
+
     switch (slot.status) {
       case MedicationStatus.completed:
-        return _CompletedCard(slot: slot);
+        return _buildCompleted();
       case MedicationStatus.active:
-        return _ActiveCard(slot: slot, onConfirm: onConfirm);
+        return _buildActionable(
+          variant: _cardVariants[MedicationStatus.active]!,
+          button: _FilledButton(
+            label: 'Konfirmasi Minum Obat',
+            onPressed: onConfirm,
+          ),
+        );
       case MedicationStatus.late:
-        return _LateCard(slot: slot, onLateReason: onLateReason);
+        return _buildActionable(
+          variant: _cardVariants[MedicationStatus.late]!,
+          badge: _CornerBadge(
+            label: 'Terlambat',
+            bgColor: const Color(0xFFBA7600),
+          ),
+          button: _OutlinedButton(
+            label: 'Catat Alasan Terlambat',
+            onPressed: onLateReason,
+          ),
+        );
       case MedicationStatus.missed:
-        return _MissedCard(slot: slot, onConfirm: onConfirm);
+        return _buildActionable(
+          variant: _cardVariants[MedicationStatus.missed]!,
+          badge: _CornerBadge(
+            label: 'Belum Minum Obat',
+            bgColor: const Color(0xFFBA0000),
+          ),
+          button: _FilledButton(
+            label: 'Konfirmasi Minum Obat',
+            onPressed: onConfirm,
+          ),
+        );
       case MedicationStatus.locked:
-        return _LockedCard(slot: slot);
+        return _buildLocked();
     }
   }
-}
 
-// ═══════════════════════════════════════════════════════════════════════════
-// 1.  COMPLETED   –  "Selesai diminum"   (design #3 – Pagi)
-// ═══════════════════════════════════════════════════════════════════════════
-class _CompletedCard extends StatelessWidget {
-  final _MedicationSlot slot;
-  const _CompletedCard({required this.slot});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
+  // ── Completed (no accent, no badge, no button) ──
+  Widget _buildCompleted() {
+    final v = _cardVariants[MedicationStatus.completed]!;
+    return _CardFrame(
+      borderColor: v.borderColor,
+      shadows: v.shadows,
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x4CC4C6CF)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1192,334 +1053,67 @@ class _CompletedCard extends StatelessWidget {
       ),
     );
   }
-}
 
-// ═══════════════════════════════════════════════════════════════════════════
-// 2.  ACTIVE      –  ready to take  (design #3 – Siang)
-// ═══════════════════════════════════════════════════════════════════════════
-class _ActiveCard extends StatelessWidget {
-  final _MedicationSlot slot;
-  final VoidCallback? onConfirm;
-  const _ActiveCard({required this.slot, this.onConfirm});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF001833)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14001833),
-            blurRadius: 30,
-            offset: Offset(0, 8),
+  // ── Actionable (accent bar + optional badge + meds + button) ──
+  Widget _buildActionable({
+    required _CardVariant variant,
+    _CornerBadge? badge,
+    required Widget button,
+  }) {
+    return _CardFrame(
+      borderColor: variant.borderColor,
+      shadows: variant.shadows,
+      clip: true,
+      padding: const EdgeInsets.all(24),
+      stackChildren: [
+        // Left accent bar
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          child: Container(
+            width: 4,
+            color: variant.accentColor,
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Left accent bar
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(width: 4, color: const Color(0xFF001833)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _HeaderRow(
-                    label: slot.label, timeRange: slot.timeRange, dark: true),
-                const SizedBox(height: 16),
-                // medication list
-                ...slot.medications.map(
-                  (med) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      med,
-                      style: GoogleFonts.manrope(
-                        color: const Color(0xFF43474E),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // CTA
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: onConfirm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF001833),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    child: Text(
-                      'Konfirmasi Minum Obat',
-                      style: GoogleFonts.manrope(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.60,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 3.  LATE        –  "Terlambat"  (design #4 – Pagi variant)
-// ═══════════════════════════════════════════════════════════════════════════
-class _LateCard extends StatelessWidget {
-  final _MedicationSlot slot;
-  final VoidCallback? onLateReason;
-  const _LateCard({required this.slot, this.onLateReason});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE19200)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14001833),
-            blurRadius: 30,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Left accent bar – orange
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(width: 4, color: const Color(0xFFE4A700)),
-          ),
-          // Badge – Terlambat
+        ),
+        // Corner badge (if any)
+        if (badge != null)
           Positioned(
             right: 0,
             top: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: const BoxDecoration(
-                color: Color(0xFFBA7600),
-                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(8)),
-              ),
-              child: Text(
-                'Terlambat',
-                style: GoogleFonts.manrope(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.60,
-                ),
-              ),
-            ),
+            child: badge,
           ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _HeaderRow(
-                    label: slot.label, timeRange: slot.timeRange, dark: true),
-                const SizedBox(height: 16),
-                ...slot.medications.map(
-                  (med) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      med,
-                      style: GoogleFonts.manrope(
-                        color: const Color(0xFF43474E),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Outlined CTA – "Catat Alasan Terlambat"
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: onLateReason,
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFC4C6CF)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    child: Text(
-                      'Catat Alasan Terlambat',
-                      style: GoogleFonts.manrope(
-                        color: const Color(0xFF191C1D),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.60,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        // Content
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _HeaderRow(
+                  label: slot.label,
+                  timeRange: slot.timeRange,
+                  dark: true),
+              const SizedBox(height: 16),
+              _MedicationList(medications: slot.medications),
+              const SizedBox(height: 12),
+              SizedBox(width: double.infinity, child: button),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
-}
 
-// ═══════════════════════════════════════════════════════════════════════════
-// 4.  MISSED      –  "Belum Minum Obat"  (design #4 – Siang variant)
-// ═══════════════════════════════════════════════════════════════════════════
-class _MissedCard extends StatelessWidget {
-  final _MedicationSlot slot;
-  final VoidCallback? onConfirm;
-  const _MissedCard({required this.slot, this.onConfirm});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFA60000)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14001833),
-            blurRadius: 30,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Left accent bar – red
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(width: 4, color: const Color(0xFFC50000)),
-          ),
-          // Badge – "Belum Minum Obat"
-          Positioned(
-            right: 0,
-            top: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: const BoxDecoration(
-                color: Color(0xFFBA0000),
-                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(8)),
-              ),
-              child: Text(
-                'Belum Minum Obat',
-                style: GoogleFonts.manrope(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.60,
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _HeaderRow(
-                    label: slot.label, timeRange: slot.timeRange, dark: true),
-                const SizedBox(height: 16),
-                ...slot.medications.map(
-                  (med) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      med,
-                      style: GoogleFonts.manrope(
-                        color: const Color(0xFF43474E),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // CTA – same as active
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: onConfirm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF001833),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    child: Text(
-                      'Konfirmasi Minum Obat',
-                      style: GoogleFonts.manrope(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.60,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 5.  LOCKED      –  "Terkunci"  (design #3 – Malam)
-// ═══════════════════════════════════════════════════════════════════════════
-class _LockedCard extends StatelessWidget {
-  final _MedicationSlot slot;
-  const _LockedCard({required this.slot});
-
-  @override
-  Widget build(BuildContext context) {
+  // ── Locked (muted, no interaction) ──
+  Widget _buildLocked() {
+    final v = _cardVariants[MedicationStatus.locked]!;
     return Opacity(
       opacity: 0.60,
-      child: Container(
-        width: double.infinity,
+      child: _CardFrame(
+        borderColor: v.borderColor,
+        shadows: v.shadows,
+        bgColor: v.bgColor,
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F9FA),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE1E3E4)),
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1547,9 +1141,184 @@ class _LockedCard extends StatelessWidget {
   }
 }
 
-// ===========================================================================
-// Shared header row used by all card variants
-// ===========================================================================
+// ═══════════════════════════════════════════════════════════════════════════
+// Shared card frame –  the outer container for all variants
+// ═══════════════════════════════════════════════════════════════════════════
+class _CardFrame extends StatelessWidget {
+  final Color borderColor;
+  final List<BoxShadow> shadows;
+  final EdgeInsets padding;
+  final bool clip;
+  final Color? bgColor;
+  final Widget? child;
+  final List<Widget>? stackChildren;
+
+  const _CardFrame({
+    required this.borderColor,
+    required this.shadows,
+    required this.padding,
+    this.clip = false,
+    this.bgColor,
+    this.child,
+    this.stackChildren,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final container = Container(
+      width: double.infinity,
+      padding: child != null ? padding : EdgeInsets.zero,
+      clipBehavior: clip ? Clip.antiAlias : Clip.none,
+      decoration: BoxDecoration(
+        color: bgColor ?? Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+        boxShadow: shadows,
+      ),
+      child: child,
+    );
+
+    if (stackChildren != null) {
+      return Container(
+        width: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor),
+          boxShadow: shadows,
+        ),
+        child: Stack(children: stackChildren!),
+      );
+    }
+
+    return container;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Corner badge  –  "Terlambat" / "Belum Minum Obat"
+// ═══════════════════════════════════════════════════════════════════════════
+class _CornerBadge extends StatelessWidget {
+  final String label;
+  final Color bgColor;
+
+  const _CornerBadge({required this.label, required this.bgColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius:
+            const BorderRadius.only(bottomLeft: Radius.circular(8)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.manrope(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.60,
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Medication list  –  shared between actionable cards
+// ═══════════════════════════════════════════════════════════════════════════
+class _MedicationList extends StatelessWidget {
+  final List<String> medications;
+  const _MedicationList({required this.medications});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: medications.map((med) => Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Text(
+          med,
+          style: GoogleFonts.manrope(
+            color: const Color(0xFF43474E),
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      )).toList(),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Button variants  –  filled (dark) / outlined
+// ═══════════════════════════════════════════════════════════════════════════
+class _FilledButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _FilledButton({required this.label, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF001833),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.manrope(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.60,
+        ),
+      ),
+    );
+  }
+}
+
+class _OutlinedButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _OutlinedButton({required this.label, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: Color(0xFFC4C6CF)),
+        foregroundColor: const Color(0xFF191C1D),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.manrope(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.60,
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Shared header row  –  label + time range pill
+// ═══════════════════════════════════════════════════════════════════════════
 class _HeaderRow extends StatelessWidget {
   final String label;
   final String timeRange;

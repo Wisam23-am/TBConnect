@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'features/patient/presentation/patient_home_page.dart';
+import 'features/auth/presentation/portal_role_screen.dart';
 
 class TbConnectApp extends StatelessWidget {
   const TbConnectApp({super.key});
@@ -85,7 +85,7 @@ class TbConnectApp extends StatelessWidget {
           hintStyle: const TextStyle(color: Color(0xFF74777F)),
         ),
       ),
-      home: const PatientHomePage(initialNavIndex: 3, allowGuestMode: true),
+      home: const PortalRoleScreen(),
     );
   }
 }
