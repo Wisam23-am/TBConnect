@@ -76,6 +76,7 @@ class _PatientSymptomsPageState extends State<PatientSymptomsPage> {
       return;
     }
 
+    // Hitung nausea, dizziness, fatigue dari gejala darurat yang dipilih
     int nauseaLevel = _selectedEmergencySymptoms.contains('Muntah Berat') ? 3 : 0;
     int dizzinessLevel = _selectedEmergencySymptoms.contains('Pingsan') ? 3 : 0;
     int fatigueLevel = _selectedSymptoms.contains('Lemas / Lelah') ? 3 : 0;
