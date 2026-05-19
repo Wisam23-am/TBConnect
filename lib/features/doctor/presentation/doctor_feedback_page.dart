@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:tbconnect/services/auth_service.dart';
+import 'package:tbconnect/services/doctor_service.dart';
 
 class DoctorFeedbackPage extends StatefulWidget {
   final String patientName;

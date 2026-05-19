@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../services/auth_service.dart';
-import '../../../widgets/patient_bottom_nav_bar.dart';
-import 'patient_home_page.dart';
-import 'patient_symptoms_page.dart';
+import '../../../services/patient_service.dart';
 import 'patient_weight_input_page.dart';
 
 class PatientWeightProgressPage extends StatefulWidget {
@@ -22,7 +20,6 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
   List<Map<String, dynamic>> _weightLogs = [];
   String? _currentWeek;
   String? _error;
-  int _selectedNavIndex = 2; // Berat tab
 
   @override
   void initState() {
@@ -113,33 +110,6 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
     }
   }
 
-  void _handleBottomNavTap(int index) {
-    if (index == _selectedNavIndex) return;
-
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const PatientHomePage(
-            initialNavIndex: 3,
-            allowGuestMode: true,
-          ),
-        ),
-      );
-      return;
-    }
-
-    if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const PatientSymptomsPage()),
-      );
-      return;
-    }
-
-    setState(() => _selectedNavIndex = index);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,14 +117,6 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(
-            Icons.arrow_back_rounded,
-            color: Color(0xFF001833),
-            size: 24,
-          ),
-        ),
         title: Text(
           'Progres Berat Badan',
           style: GoogleFonts.manrope(
@@ -422,10 +384,6 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
                     ),
                   ),
                 ),
-      bottomNavigationBar: PatientBottomNavBar(
-        currentIndex: _selectedNavIndex,
-        onTap: _handleBottomNavTap,
-      ),
     );
   }
 }

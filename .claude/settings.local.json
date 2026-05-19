@@ -4,7 +4,10 @@
       "Bash(xargs grep -l \"v_doctor_triage\\\\|getTriageBoard\\\\|priority_level\")",
       "Bash(xargs -I{} find {} -type f -name \"*.dart\")",
       "Bash(dart analyze *)",
-      "Bash(dir *)"
+      "Bash(dir *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Get-Content \"C:\\\\Kuliah\\\\smt4\\\\mobile\\\\TBConnect\\\\lib\\\\features\\\\patient\\\\presentation\\\\patient_home_page.dart\" -Encoding UTF8 | Select-Object -Index \\(121..127\\))",
+      "Bash(flutter analyze *)"
     ]
   }
 }

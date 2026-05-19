@@ -21,22 +21,11 @@ class PatientBottomNavBar extends StatelessWidget {
     required this.currentIndex,
     required this.onTap,
     this.items = const [
+      PatientBottomNavItem(icon: Icons.home_rounded, label: 'Beranda'),
       PatientBottomNavItem(
-        icon: Icons.home_rounded,
-        label: 'Beranda',
-      ),
-      PatientBottomNavItem(
-        icon: Icons.medication_rounded,
-        label: 'Obat',
-      ),
-      PatientBottomNavItem(
-        icon: Icons.monitor_weight_rounded,
-        label: 'Berat',
-      ),
-      PatientBottomNavItem(
-        icon: Icons.person_rounded,
-        label: 'Profil',
-      ),
+          icon: Icons.monitor_heart_outlined, label: 'Gejala'),
+      PatientBottomNavItem(icon: Icons.monitor_weight_rounded, label: 'Berat'),
+      PatientBottomNavItem(icon: Icons.person_rounded, label: 'Profil'),
     ],
   });
 

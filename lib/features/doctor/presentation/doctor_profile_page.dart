@@ -4,7 +4,11 @@ import 'package:tbconnect/services/auth_service.dart';
 import 'package:tbconnect/features/auth/presentation/portal_role_screen.dart';
 
 class DoctorProfilePage extends StatefulWidget {
-  const DoctorProfilePage({super.key});
+  const DoctorProfilePage({super.key, this.embedded = false});
+
+  /// When [embedded] is true, the page renders without its own [Scaffold]
+  /// so it can be placed inside [DoctorMainShell].
+  final bool embedded;
 
   @override
   State<DoctorProfilePage> createState() => _DoctorProfilePageState();
@@ -73,6 +77,72 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final profileContent = _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0A112D4E),
+                        blurRadius: 20,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: const Color(0xFFE5F0FF),
+                        child: Text(
+                          _getInitials(_profile?['full_name'] ?? 'D'),
+                          style: GoogleFonts.manrope(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF112D4E),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _profile?['full_name'] ?? '-',
+                        style: GoogleFonts.manrope(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF112D4E),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _profile?['specialization'] ?? 'Dokter Paru-Paru',
+                        style: GoogleFonts.manrope(
+                          fontSize: 14,
+                          color: const Color(0xFF5A8DA0),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Divider(),
+                      _buildInfoRow('Email', _profile?['email'] ?? '-'),
+                      _buildInfoRow('STR', _profile?['str_number'] ?? '-'),
+                      _buildInfoRow('Rumah Sakit', _profile?['hospital_name'] ?? '-'),
+                      _buildInfoRow('No. Telepon', _profile?['phone_number'] ?? '-'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+
+    // When embedded in DoctorMainShell, return just the content
+    if (widget.embedded) return profileContent;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -92,68 +162,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x0A112D4E),
-                          blurRadius: 20,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: const Color(0xFFE5F0FF),
-                          child: Text(
-                            _getInitials(_profile?['full_name'] ?? 'D'),
-                            style: GoogleFonts.manrope(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF112D4E),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _profile?['full_name'] ?? '-',
-                          style: GoogleFonts.manrope(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF112D4E),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _profile?['specialization'] ?? 'Dokter Paru-Paru',
-                          style: GoogleFonts.manrope(
-                            fontSize: 14,
-                            color: const Color(0xFF5A8DA0),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Divider(),
-                        _buildInfoRow('Email', _profile?['email'] ?? '-'),
-                        _buildInfoRow('STR', _profile?['str_number'] ?? '-'),
-                        _buildInfoRow('Rumah Sakit', _profile?['hospital_name'] ?? '-'),
-                        _buildInfoRow('No. Telepon', _profile?['phone_number'] ?? '-'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      body: profileContent,
     );
   }
 
