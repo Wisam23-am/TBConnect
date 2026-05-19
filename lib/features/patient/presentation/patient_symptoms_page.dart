@@ -76,9 +76,9 @@ class _PatientSymptomsPageState extends State<PatientSymptomsPage> {
       return;
     }
 
-    // Hitung nausea, dizziness, fatigue dari symptoms yang dipilih
-    int nauseaLevel = _selectedSymptoms.contains('Muntah Berat') ? 3 : 0;
-    int dizzinessLevel = _selectedSymptoms.contains('Pingsan') ? 3 : 0;
+    // Hitung nausea, dizziness, fatigue dari gejala darurat yang dipilih
+    int nauseaLevel = _selectedEmergencySymptoms.contains('Muntah Berat') ? 3 : 0;
+    int dizzinessLevel = _selectedEmergencySymptoms.contains('Pingsan') ? 3 : 0;
     int fatigueLevel = _selectedSymptoms.contains('Lemas / Lelah') ? 3 : 0;
 
     bool hemoptysis = _selectedEmergencySymptoms.contains('Batuk Berdarah');
