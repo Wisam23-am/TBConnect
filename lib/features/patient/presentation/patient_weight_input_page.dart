@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/patient_service.dart';
+import 'patient_shell.dart';
 import '../../../widgets/weight_submit_success_dialog.dart';
 
 class PatientWeightInputPage extends StatefulWidget {
@@ -98,7 +99,12 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
       if (mounted) {
         await WeightSubmitSuccessDialog.show(context);
         if (mounted) {
-          Navigator.pop(context, weight);
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) => const PatientShell(initialIndex: 0),
+            ),
+            (route) => false,
+          );
         }
       }
     } catch (e) {
