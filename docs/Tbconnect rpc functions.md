@@ -41,17 +41,21 @@ COMMENT ON FUNCTION public.get_upcoming_visits IS 'RPC: Ambil jadwal kontrol men
 -- ============================================================
 -- RPC: log_medication_taken
 -- Dipanggil pasien saat tap "Minum Obat"
--- Menggunakan server time NOW() — WAJIB untuk hindari manipulasi
+-- Diperbarui untuk mendukung p_log_date untuk navigasi tanggal
+-- dan p_reason jika melapor terlambat.
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.log_medication_taken(
   p_patient_id  UUID,
-  p_session     TEXT  -- 'morning' | 'afternoon' | 'evening'
+  p_session     TEXT,
+  p_reason      TEXT DEFAULT NULL,
+  p_log_date    DATE DEFAULT NULL
 )
 RETURNS JSONB AS $$
 DECLARE
   v_server_time   TIMESTAMPTZ := NOW() AT TIME ZONE 'Asia/Jakarta';
   v_current_hour  SMALLINT := EXTRACT(HOUR FROM v_server_time);
-  v_log_date      DATE := v_server_time::DATE;
+  v_today         DATE := v_server_time::DATE;
+  v_target_date   DATE := COALESCE(p_log_date, v_today);
   v_status        TEXT;
   v_session_start SMALLINT;
   v_session_end   SMALLINT;
@@ -65,73 +69,75 @@ BEGIN
     ELSE RETURN jsonb_build_object('success', false, 'error', 'Session tidak valid');
   END CASE;
 
-  -- Tentukan status berdasarkan server time
-  IF v_current_hour < v_session_start THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Waktu minum obat belum tiba');
-  ELSIF v_current_hour >= v_session_start AND v_current_hour < v_session_end THEN
-    v_status := 'taken';
+  -- Tentukan status
+  IF v_target_date < v_today THEN
+    -- Jika target adalah masa lalu, maka statusnya selalu 'late' (telat lapor)
+    v_status := 'late';
+  ELSIF v_target_date = v_today THEN
+    -- Hari ini, gunakan logika jam
+    IF v_current_hour < v_session_start THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Waktu minum obat belum tiba');
+    ELSIF v_current_hour >= v_session_start AND v_current_hour < v_session_end THEN
+      v_status := 'taken';
+    ELSE
+      v_status := 'late';
+    END IF;
   ELSE
-    v_status := 'late';  -- Masih bisa input, tapi dicatat terlambat
+    RETURN jsonb_build_object('success', false, 'error', 'Tidak bisa mengisi untuk tanggal di masa depan');
   END IF;
 
-  -- Cek apakah sudah ada log hari ini
+  -- Cek apakah sudah ada log
   SELECT * INTO v_existing
   FROM public.medication_logs
   WHERE patient_id = p_patient_id
-    AND log_date = v_log_date
+    AND log_date = v_target_date
     AND session = p_session;
 
   IF FOUND AND v_existing.status = 'taken' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Obat sudah dicatat hari ini');
+    RETURN jsonb_build_object('success', false, 'error', 'Obat sudah dicatat pada tanggal tersebut');
   END IF;
 
   -- Upsert log
-  INSERT INTO public.medication_logs (patient_id, log_date, session, status, taken_at)
-  VALUES (p_patient_id, v_log_date, p_session, v_status, NOW())
+  INSERT INTO public.medication_logs (patient_id, log_date, session, status, taken_at, late_reason)
+  VALUES (p_patient_id, v_target_date, p_session, v_status, NOW(), p_reason)
   ON CONFLICT (patient_id, log_date, session)
-  DO UPDATE SET status = EXCLUDED.status, taken_at = EXCLUDED.taken_at;
+  DO UPDATE SET status = EXCLUDED.status, taken_at = EXCLUDED.taken_at, late_reason = EXCLUDED.late_reason;
 
-  RETURN jsonb_build_object('success', true, 'status', v_status);
+  RETURN jsonb_build_object('success', true, 'status', v_status, 'log_date', v_target_date);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION public.log_medication_taken IS 'Catat minum obat dengan server time. Status auto: taken atau late';
+COMMENT ON FUNCTION public.log_medication_taken IS 'Catat minum obat (mendukung navigasi tanggal & alasan telat)';
 
 
 -- ============================================================
 -- RPC: get_today_medication_status
--- Get status 3 sesi obat hari ini beserta apakah sesi sudah aktif
+-- Get status 3 sesi obat hari ini atau tanggal tertentu
+-- Diperbarui untuk mendukung p_target_date untuk navigasi tanggal
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.get_today_medication_status(
-  p_patient_id UUID
+  p_patient_id UUID,
+  p_target_date DATE DEFAULT NULL
 )
 RETURNS JSONB AS $$
 DECLARE
   v_server_time   TIMESTAMPTZ := NOW() AT TIME ZONE 'Asia/Jakarta';
   v_current_hour  SMALLINT := EXTRACT(HOUR FROM v_server_time);
   v_today         DATE := v_server_time::DATE;
-
-  -- Status dari DB
+  v_date          DATE := COALESCE(p_target_date, v_today);
+  
   v_morning_log   public.medication_logs;
   v_afternoon_log public.medication_logs;
   v_evening_log   public.medication_logs;
-
-  -- Helper function
+  
   v_result        JSONB;
 BEGIN
   SELECT * INTO v_morning_log   FROM public.medication_logs
-    WHERE patient_id = p_patient_id AND log_date = v_today AND session = 'morning';
+    WHERE patient_id = p_patient_id AND log_date = v_date AND session = 'morning';
   SELECT * INTO v_afternoon_log FROM public.medication_logs
-    WHERE patient_id = p_patient_id AND log_date = v_today AND session = 'afternoon';
+    WHERE patient_id = p_patient_id AND log_date = v_date AND session = 'afternoon';
   SELECT * INTO v_evening_log   FROM public.medication_logs
-    WHERE patient_id = p_patient_id AND log_date = v_today AND session = 'evening';
-
-  -- Fungsi helper untuk compute display_status
-  -- locked: belum waktunya
-  -- active: sedang dalam window waktu
-  -- taken: sudah minum
-  -- late: window sudah lewat tapi belum minum
-  -- missed: sudah lebih dari 2 jam setelah window berakhir
+    WHERE patient_id = p_patient_id AND log_date = v_date AND session = 'evening';
 
   v_result := jsonb_build_array(
     jsonb_build_object(
@@ -140,6 +146,8 @@ BEGIN
       'window',        '06:00 - 09:00',
       'status',        CASE
                          WHEN v_morning_log.status IS NOT NULL THEN v_morning_log.status
+                         WHEN v_date < v_today THEN 'missed'
+                         WHEN v_date > v_today THEN 'locked'
                          WHEN v_current_hour < 6  THEN 'locked'
                          WHEN v_current_hour BETWEEN 6 AND 8 THEN 'active'
                          WHEN v_current_hour BETWEEN 9 AND 10 THEN 'late'
@@ -153,6 +161,8 @@ BEGIN
       'window',        '13:00 - 15:00',
       'status',        CASE
                          WHEN v_afternoon_log.status IS NOT NULL THEN v_afternoon_log.status
+                         WHEN v_date < v_today THEN 'missed'
+                         WHEN v_date > v_today THEN 'locked'
                          WHEN v_current_hour < 13 THEN 'locked'
                          WHEN v_current_hour BETWEEN 13 AND 14 THEN 'active'
                          WHEN v_current_hour BETWEEN 15 AND 16 THEN 'late'
@@ -166,6 +176,8 @@ BEGIN
       'window',        '18:00 - 21:00',
       'status',        CASE
                          WHEN v_evening_log.status IS NOT NULL THEN v_evening_log.status
+                         WHEN v_date < v_today THEN 'missed'
+                         WHEN v_date > v_today THEN 'locked'
                          WHEN v_current_hour < 18 THEN 'locked'
                          WHEN v_current_hour BETWEEN 18 AND 20 THEN 'active'
                          WHEN v_current_hour BETWEEN 21 AND 22 THEN 'late'
@@ -178,12 +190,14 @@ BEGIN
   RETURN jsonb_build_object(
     'success',       true,
     'server_time',   v_server_time,
+    'target_date',   v_date,
     'sessions',      v_result
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION public.get_today_medication_status IS 'Get status obat hari ini (3 sesi) berdasarkan server time WIB';
+COMMENT ON FUNCTION public.get_today_medication_status IS 'Get status obat hari ini / tanggal tertentu (3 sesi) berdasarkan server time WIB';
+
 
 
 -- ============================================================
@@ -370,3 +384,215 @@ COMMENT ON FUNCTION public.mark_missed_medications IS
 -- Setup pg_cron (aktifkan di Supabase Dashboard → Database → Extensions → pg_cron)
 -- SELECT cron.schedule('mark-missed-meds', '0 16 * * *', 'SELECT public.mark_missed_medications()');
 -- (16 UTC = 23 WIB)
+
+
+-- ============================================================
+-- RPC: send_patient_reminder
+-- Dokter mengirim pengingat manual ke pasien yang terlambat minum obat
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.send_patient_reminder(
+  p_patient_id UUID
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_patient_exists BOOLEAN;
+BEGIN
+  -- Validasi apakah pasien ada dan merupakan milik dokter yang sedang login
+  SELECT EXISTS(
+    SELECT 1 FROM public.patients 
+    WHERE id = p_patient_id AND doctor_id = auth.uid()
+  ) INTO v_patient_exists;
+
+  IF NOT v_patient_exists THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Pasien tidak ditemukan atau bukan milik Anda');
+  END IF;
+
+  -- Insert notifikasi baru
+  INSERT INTO public.notifications (
+    patient_id, 
+    type, 
+    title, 
+    body, 
+    is_sent, 
+    is_read
+  )
+  VALUES (
+    p_patient_id,
+    'medication_reminder',
+    'Pengingat Minum Obat dari Dokter',
+    'Dokter Anda memperhatikan Anda belum mengisi log obat hari ini. Segera minum obat dan konfirmasi di aplikasi.',
+    FALSE,
+    FALSE
+  );
+
+  RETURN jsonb_build_object('success', true, 'message', 'Pengingat berhasil dikirim');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.send_patient_reminder IS 'Dipanggil oleh dokter untuk mengirim notifikasi pengingat ke pasien.';
+
+
+-- ============================================================
+-- RPC: get_patient_profile
+-- Ambil profil lengkap pasien beserta data dokter pembinanya
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.get_patient_profile(
+  p_patient_id UUID
+)
+RETURNS JSON AS $$
+DECLARE
+    v_result JSON;
+BEGIN
+    SELECT json_build_object(
+        'id', p.id,
+        'full_name', p.full_name,
+        'nik', p.nik,
+        'birth_place', p.birth_place,
+        'birth_date', p.birth_date,
+        'age', p.age,
+        'gender', p.gender,
+        'initial_weight_kg', p.initial_weight_kg,
+        'treatment_start_date', p.treatment_start_date,
+        'phone_number', p.phone_number,
+        'address', p.address,
+        'faskes_name', p.faskes_name,
+        'doctors', json_build_object(
+            'full_name', d.full_name,
+            'hospital_name', d.hospital_name
+        )
+    ) INTO v_result
+    FROM public.patients p
+    LEFT JOIN public.doctors d ON d.id = p.doctor_id
+    WHERE p.id = p_patient_id;
+
+    RETURN v_result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.get_patient_profile IS 'Ambil profil lengkap pasien beserta data dokter pembinanya (bypass RLS)';
+
+
+-- ============================================================
+-- RPC: save_daily_symptom_report
+-- Simpan laporan gejala harian pasien (mood, gejala, catatan)
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.save_daily_symptom_report(
+  p_patient_id UUID,
+  p_mood_level TEXT,
+  p_symptoms TEXT[] DEFAULT '{}',
+  p_emergency_symptoms TEXT[] DEFAULT '{}',
+  p_notes TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_today DATE := CURRENT_DATE;
+  v_result JSONB;
+BEGIN
+  INSERT INTO daily_symptom_reports (patient_id, report_date, mood_level, symptoms, emergency_symptoms, notes)
+  VALUES (p_patient_id, v_today, p_mood_level, p_symptoms, p_emergency_symptoms, p_notes)
+  ON CONFLICT (patient_id, report_date)
+  DO UPDATE SET
+    mood_level = EXCLUDED.mood_level,
+    symptoms = EXCLUDED.symptoms,
+    emergency_symptoms = EXCLUDED.emergency_symptoms,
+    notes = COALESCE(EXCLUDED.notes, daily_symptom_reports.notes),
+    created_at = NOW()
+  RETURNING jsonb_build_object(
+    'id', id,
+    'patient_id', patient_id,
+    'report_date', report_date,
+    'mood_level', mood_level,
+    'symptoms', symptoms,
+    'emergency_symptoms', emergency_symptoms,
+    'notes', notes,
+    'created_at', created_at
+  ) INTO v_result;
+
+  RETURN jsonb_build_object('success', true, 'data', v_result);
+END;
+$$;
+
+COMMENT ON FUNCTION public.save_daily_symptom_report IS 'Simpan laporan gejala harian pasien (bypass RLS)';
+
+
+-- ============================================================
+-- RPC: get_daily_symptom_reports
+-- Ambil daftar laporan gejala harian pasien terakhir
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.get_daily_symptom_reports(
+  p_patient_id UUID,
+  p_limit INT DEFAULT 7
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_reports JSONB;
+BEGIN
+  SELECT jsonb_agg(
+    jsonb_build_object(
+      'id', dsr.id,
+      'report_date', dsr.report_date,
+      'mood_level', dsr.mood_level,
+      'symptoms', dsr.symptoms,
+      'emergency_symptoms', dsr.emergency_symptoms,
+      'notes', dsr.notes,
+      'created_at', dsr.created_at
+    )
+    ORDER BY dsr.report_date DESC
+  ) INTO v_reports
+  FROM daily_symptom_reports dsr
+  WHERE dsr.patient_id = p_patient_id
+  LIMIT p_limit;
+
+  RETURN jsonb_build_object('success', true, 'reports', COALESCE(v_reports, '[]'::JSONB));
+END;
+$$;
+
+COMMENT ON FUNCTION public.get_daily_symptom_reports IS 'Ambil daftar laporan gejala harian pasien terakhir (bypass RLS)';
+
+
+-- ============================================================
+-- RPC: get_today_symptom_report
+-- Ambil laporan gejala hari ini milik pasien jika ada
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.get_today_symptom_report(
+  p_patient_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_today DATE := CURRENT_DATE;
+  v_result JSONB;
+BEGIN
+  SELECT jsonb_build_object(
+    'id', dsr.id,
+    'report_date', dsr.report_date,
+    'mood_level', dsr.mood_level,
+    'symptoms', dsr.symptoms,
+    'emergency_symptoms', dsr.emergency_symptoms,
+    'notes', dsr.notes,
+    'created_at', dsr.created_at
+  ) INTO v_result
+  FROM daily_symptom_reports dsr
+  WHERE dsr.patient_id = p_patient_id
+    AND dsr.report_date = v_today;
+
+  IF v_result IS NULL THEN
+    RETURN jsonb_build_object('success', true, 'data', null);
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'data', v_result);
+END;
+$$;
+
+COMMENT ON FUNCTION public.get_today_symptom_report IS 'Ambil laporan gejala hari ini milik pasien (bypass RLS)';

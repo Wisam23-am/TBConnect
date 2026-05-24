@@ -69,6 +69,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
   String? _error;
   final Map<String, DateTime> _guestConfirmedAt = {};
   final Set<String> _justConfirmedSessions = {}; // tracked locally for instant visual feedback
+  DateTime _selectedDate = DateTime.now();
 
   // Medication names per session – bisa diperkaya dari DB nanti
   // ── Indonesian day/month names (avoid locale init issues) ──
@@ -168,7 +169,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
 
       // 2. Status obat hari ini dari RPC (SECURITY DEFINER → bypass RLS)
       final medResult = await _patientService.getTodayMedications(
-          patientId: session.patientId);
+          patientId: session.patientId, date: _selectedDate);
       final sessions =
           List<Map<String, dynamic>>.from(medResult['sessions'] ?? []);
 
@@ -327,8 +328,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
   }
 
   String get _formattedDate {
-    final now = DateTime.now();
-    return '${_dayNames[now.weekday - 1]}, ${now.day} ${_monthNames[now.month - 1]}';
+    return '${_dayNames[_selectedDate.weekday - 1]}, ${_selectedDate.day} ${_monthNames[_selectedDate.month - 1]} ${_selectedDate.year}';
   }
 
   String _formatDate(DateTime dt) {
@@ -370,6 +370,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
         patientId: _session!.patientId,
         session: slot.session,
         reason: reason,
+        date: _selectedDate,
       );
 
       // Track locally so the card instantly shows as completed
@@ -648,26 +649,64 @@ class _PatientHomePageState extends State<PatientHomePage> {
   // Schedule header
   // ──────────────────────────────────────────────────────────────
   Widget _buildScheduleHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final now = DateTime.now();
+    final isToday = _selectedDate.year == now.year &&
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day;
+        
+    // Batas mundur maksimal 3 hari
+    final today = DateTime(now.year, now.month, now.day);
+    final selected = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final daysDifference = today.difference(selected).inDays;
+    final isMaxPast = daysDifference >= 3;
+        
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Jadwal Hari Ini',
-          style: GoogleFonts.manrope(
-            color: const Color(0xFF001833),
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.24,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isToday ? 'Jadwal Hari Ini' : 'Jadwal Sebelumnya',
+              style: GoogleFonts.manrope(
+                color: const Color(0xFF001833),
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.24,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _formattedDate,
+              style: GoogleFonts.manrope(
+                color: const Color(0xFF43474E),
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          _formattedDate,
-          style: GoogleFonts.manrope(
-            color: const Color(0xFF43474E),
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-          ),
+        Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.chevron_left, color: isMaxPast ? Colors.grey : const Color(0xFF112D4E)),
+              onPressed: isMaxPast ? null : () {
+                setState(() {
+                  _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+                  _loadData();
+                });
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.chevron_right, color: isToday ? Colors.grey : const Color(0xFF112D4E)),
+              onPressed: isToday ? null : () {
+                setState(() {
+                  _selectedDate = _selectedDate.add(const Duration(days: 1));
+                  _loadData();
+                });
+              },
+            ),
+          ],
         ),
       ],
     );
