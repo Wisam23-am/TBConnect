@@ -48,7 +48,7 @@ class _CreatePatientScreenState extends State<CreatePatientScreen> {
   }
 
   void _handleNavTap(int index) {
-    if (index == 1) return; // Already on Tambah page
+    if (index == 1) return;
     if (index == 2) {
       Navigator.push(
         context,
@@ -168,8 +168,17 @@ class _CreatePatientScreenState extends State<CreatePatientScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isWide = screenWidth > 600;
+    final isSmall = screenWidth < 360;
+    // Dynamic horizontal padding: more on wide screens, less on small
+    final horizontalPadding = isWide ? 48.0 : (isSmall ? 16.0 : 24.0);
+    // Bottom padding accounts for bottom nav bar
+    final bottomPadding = screenHeight * 0.15;
+
     final formBody = SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 24, horizontalPadding, bottomPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -325,20 +334,24 @@ class _CreatePatientScreenState extends State<CreatePatientScreen> {
                         strokeWidth: 2.5,
                       ),
                     )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.qr_code_rounded, size: 20),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Simpan & Buat Kode QR',
-                          style: GoogleFonts.manrope(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.60,
+                  : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.qr_code_rounded, size: 20),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Simpan & Buat Kode QR',
+                            style: GoogleFonts.manrope(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.60,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
             ),
           ),
@@ -385,26 +398,37 @@ class _CreatePatientScreenState extends State<CreatePatientScreen> {
                   color: Color(0xFF112D4E), size: 20),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Tambah Pasien',
-                    style: GoogleFonts.manrope(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF112D4E),
-                    )),
-                Text('Registrasi pasien TB baru',
-                    style: GoogleFonts.manrope(
-                      fontSize: 12,
-                      color: const Color(0xFF5A8DA0),
-                    )),
-              ],
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text('Tambah Pasien',
+                        style: GoogleFonts.manrope(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF112D4E),
+                        )),
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text('Registrasi pasien TB baru',
+                        style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          color: const Color(0xFF5A8DA0),
+                        )),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
-      body: formBody,
+      // Wrap body in SafeArea for devices with notches
+      body: SafeArea(child: formBody),
       bottomNavigationBar: DoctorBottomNavBar(
         currentIndex: 1,
         onTap: _handleNavTap,
@@ -616,12 +640,15 @@ class _FormSectionCard extends StatelessWidget {
                 child: Icon(icon, color: const Color(0xFF112D4E), size: 18),
               ),
               const SizedBox(width: 12),
-              Text(
-                title,
-                style: GoogleFonts.manrope(
-                  color: const Color(0xFF112D4E),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+              Flexible(
+                child: Text(
+                  title,
+                  style: GoogleFonts.manrope(
+                    color: const Color(0xFF112D4E),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -669,26 +696,33 @@ class _GenderChip extends StatelessWidget {
             width: 1.5,
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: selected ? Colors.white : const Color(0xFF6B7280),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.manrope(
-                color: selected
-                    ? Colors.white
-                    : const Color(0xFF001833),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+        // FittedBox scales the entire row (icon + text) down proportionally
+        // when it exceeds the chip width, preventing "Perempuan" from
+        // overflowing or being truncated with ellipsis on narrow screens.
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: selected ? Colors.white : const Color(0xFF6B7280),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.manrope(
+                  color: selected
+                      ? Colors.white
+                      : const Color(0xFF001833),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

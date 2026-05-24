@@ -170,14 +170,32 @@ class _DoctorMainShellState extends State<DoctorMainShell> {
         );
       case 2:
         return AppBar(
-          backgroundColor: Colors.white,
+          toolbarHeight: 72,
+          backgroundColor: Colors.white.withValues(alpha: 0.95),
+          surfaceTintColor: Colors.white,
           elevation: 0,
-          title: Text(
-            'Profil Dokter',
-            style: GoogleFonts.manrope(
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF112D4E),
-            ),
+          title: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFE5F0FF),
+                ),
+                child: const Icon(Icons.person_rounded,
+                    color: Color(0xFF112D4E), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Doctor Portal',
+                style: GoogleFonts.manrope(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF112D4E),
+                ),
+              ),
+            ],
           ),
           actions: [
             IconButton(
