@@ -68,7 +68,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
   bool _isRefreshing = false;
   String? _error;
   final Map<String, DateTime> _guestConfirmedAt = {};
-  final Set<String> _justConfirmedSessions = {}; // tracked locally for instant visual feedback
+  final Set<String> _justConfirmedSessions =
+      {}; // tracked locally for instant visual feedback
   DateTime _selectedDate = DateTime.now();
 
   // Medication names per session – bisa diperkaya dari DB nanti
@@ -339,7 +340,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
   // Actions  (DB write)
   // ────────────────────────────────────────────────────────────────────────
 
-  Future<void> _confirmMedication(_MedicationSlot slot, {String? reason}) async {
+  Future<void> _confirmMedication(_MedicationSlot slot,
+      {String? reason}) async {
     if (_session == null) return;
 
     if (_session!.patientId == 'guest') {
@@ -502,8 +504,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
                 if (mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const PortalRoleScreen()),
+                    MaterialPageRoute(builder: (_) => const PortalRoleScreen()),
                     (route) => false,
                   );
                 }
@@ -536,7 +537,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
       color: const Color(0xFF112D4E),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 100),
+        padding:
+            const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -622,23 +624,24 @@ class _PatientHomePageState extends State<PatientHomePage> {
           ),
         ),
         const Spacer(),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PatientNotificationPage(),
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFFF0F4F8),
+        // Larger, more responsive notification bell with blue background
+        Material(
+          color: const Color(0xFF2A609C),
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PatientNotificationPage(),
+                ),
+              );
+            },
+            child: const Padding(
+              padding: EdgeInsets.all(12),
+              child: Icon(Icons.notifications, size: 24, color: Colors.white),
             ),
-            child: const Icon(Icons.notifications_outlined,
-                size: 20, color: Color(0xFF112D4E)),
           ),
         ),
       ],
@@ -653,13 +656,14 @@ class _PatientHomePageState extends State<PatientHomePage> {
     final isToday = _selectedDate.year == now.year &&
         _selectedDate.month == now.month &&
         _selectedDate.day == now.day;
-        
+
     // Batas mundur maksimal 3 hari
     final today = DateTime(now.year, now.month, now.day);
-    final selected = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final selected =
+        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
     final daysDifference = today.difference(selected).inDays;
     final isMaxPast = daysDifference >= 3;
-        
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -689,22 +693,30 @@ class _PatientHomePageState extends State<PatientHomePage> {
         Row(
           children: [
             IconButton(
-              icon: Icon(Icons.chevron_left, color: isMaxPast ? Colors.grey : const Color(0xFF112D4E)),
-              onPressed: isMaxPast ? null : () {
-                setState(() {
-                  _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-                  _loadData();
-                });
-              },
+              icon: Icon(Icons.chevron_left,
+                  color: isMaxPast ? Colors.grey : const Color(0xFF112D4E)),
+              onPressed: isMaxPast
+                  ? null
+                  : () {
+                      setState(() {
+                        _selectedDate =
+                            _selectedDate.subtract(const Duration(days: 1));
+                        _loadData();
+                      });
+                    },
             ),
             IconButton(
-              icon: Icon(Icons.chevron_right, color: isToday ? Colors.grey : const Color(0xFF112D4E)),
-              onPressed: isToday ? null : () {
-                setState(() {
-                  _selectedDate = _selectedDate.add(const Duration(days: 1));
-                  _loadData();
-                });
-              },
+              icon: Icon(Icons.chevron_right,
+                  color: isToday ? Colors.grey : const Color(0xFF112D4E)),
+              onPressed: isToday
+                  ? null
+                  : () {
+                      setState(() {
+                        _selectedDate =
+                            _selectedDate.add(const Duration(days: 1));
+                        _loadData();
+                      });
+                    },
             ),
           ],
         ),
@@ -1140,9 +1152,7 @@ class _MedicationCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _HeaderRow(
-                  label: slot.label,
-                  timeRange: slot.timeRange,
-                  dark: true),
+                  label: slot.label, timeRange: slot.timeRange, dark: true),
               const SizedBox(height: 16),
               _MedicationList(medications: slot.medications),
               const SizedBox(height: 12),
@@ -1261,8 +1271,7 @@ class _CornerBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius:
-            const BorderRadius.only(bottomLeft: Radius.circular(8)),
+        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
       ),
       child: Text(
         label,
@@ -1288,17 +1297,19 @@ class _MedicationList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: medications.map((med) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(
-          med,
-          style: GoogleFonts.manrope(
-            color: const Color(0xFF43474E),
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      )).toList(),
+      children: medications
+          .map((med) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  med,
+                  style: GoogleFonts.manrope(
+                    color: const Color(0xFF43474E),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ))
+          .toList(),
     );
   }
 }

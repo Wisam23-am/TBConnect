@@ -46,10 +46,10 @@ class NotificationModel {
 
 /// Model untuk reminder minum obat yang ditampilkan di atas daftar notifikasi
 class MedicationReminderCard {
-  final String session;   // morning | afternoon | evening
-  final String label;     // Pagi | Siang | Malam
-  final String window;    // 06:00 - 09:00
-  final String status;    // locked | active | late | taken | missed
+  final String session; // morning | afternoon | evening
+  final String label; // Pagi | Siang | Malam
+  final String window; // 06:00 - 09:00
+  final String status; // locked | active | late | taken | missed
   final DateTime? takenAt;
 
   const MedicationReminderCard({
@@ -125,8 +125,7 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
       if (mounted) {
         setState(() {
           _notifications = data
-              .map((e) =>
-                  NotificationModel.fromJson(e as Map<String, dynamic>))
+              .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
               .toList();
           _isLoading = false;
         });
@@ -423,13 +422,11 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
         : isLate
             ? const Color(0xFFE65100)
             : const Color(0xFF8A9BA8);
-    final IconData icon = isActive
-        ? Icons.alarm_on_rounded
-        : Icons.alarm_off_rounded;
+    final IconData icon =
+        isActive ? Icons.alarm_on_rounded : Icons.alarm_off_rounded;
     final String badgeText = isActive ? 'SEKARANG' : 'TERLAMBAT';
-    final Color badgeColor = isActive
-        ? const Color(0xFF2E7D32)
-        : const Color(0xFFE65100);
+    final Color badgeColor =
+        isActive ? const Color(0xFF2E7D32) : const Color(0xFFE65100);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -541,8 +538,8 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
                 color: iconColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(_getIconForType(notif.type),
-                  color: iconColor, size: 22),
+              child:
+                  Icon(_getIconForType(notif.type), color: iconColor, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -707,7 +704,12 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
             fontWeight: FontWeight.w700,
           ),
         ),
+        // Add a close button on the top-left to dismiss this page
         iconTheme: const IconThemeData(color: Color(0xFF112D4E)),
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Color(0xFF112D4E)),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           // Tombol aktifkan notifikasi sistem Android
           IconButton(
@@ -715,8 +717,8 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
                 color: Color(0xFF112D4E)),
             tooltip: 'Aktifkan pengingat harian',
             onPressed: () async {
-              final granted = await LocalNotificationService.instance
-                  .requestPermission();
+              final granted =
+                  await LocalNotificationService.instance.requestPermission();
               if (granted) {
                 await LocalNotificationService.instance
                     .scheduleDailyMedicationReminders();
