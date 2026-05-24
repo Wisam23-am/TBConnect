@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../services/auth_service.dart';
-import '../../../services/patient_service.dart';
 
 class PatientControlSchedulePage extends StatefulWidget {
   const PatientControlSchedulePage({super.key});
@@ -18,7 +17,6 @@ class PatientControlSchedulePage extends StatefulWidget {
 
 class _PatientControlSchedulePageState extends State<PatientControlSchedulePage> {
   final _authService = AuthService();
-  final _patientService = PatientDataService();
 
   PatientSession? _session;
   List<Map<String, dynamic>> _visits = [];
@@ -39,33 +37,29 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
 
     try {
       final session = await _authService.getPatientSession();
-      if (session == null || session.patientId == 'guest') {
-        // Mode Guest (Uji Coba / Simulasi)
-        _session = session ??
-            PatientSession(
-              patientId: 'guest',
-              fullName: 'Pasien Uji Coba',
-              doctorId: 'guest-doctor',
-              qrCode: 'GUEST-1234',
-              treatmentStartDate: DateTime.now().subtract(const Duration(days: 45)),
-              initialWeightKg: 60.0,
-            );
-        _visits = _buildGuestVisits(_session!.treatmentStartDate);
-        setState(() {
-          _isLoading = false;
-          _isRefreshing = false;
-          _error = null;
-        });
-        return;
+      
+      _session = session ??
+          PatientSession(
+            patientId: 'guest',
+            fullName: 'Pasien Uji Coba',
+            doctorId: 'guest-doctor',
+            qrCode: 'GUEST-1234',
+            treatmentStartDate: DateTime.now().subtract(const Duration(days: 45)),
+            initialWeightKg: 60.0,
+          );
+
+      // Simulasi delay singkat agar animasi loading tetap berjalan halus
+      if (_isLoading) {
+        await Future.delayed(const Duration(milliseconds: 300));
       }
 
-      // Ambil data asli dari Supabase via RPC bypass RLS
-      final visitsData = await _patientService.getClinicVisits(patientId: session.patientId);
+      // Buat atau segarkan data kunjungan dummy di memori (tidak memanggil backend)
+      if (_visits.isEmpty || _isRefreshing) {
+        _visits = _buildGuestVisits(_session!.treatmentStartDate);
+      }
 
       if (mounted) {
         setState(() {
-          _session = session;
-          _visits = visitsData;
           _isLoading = false;
           _isRefreshing = false;
           _error = null;
@@ -304,27 +298,16 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                               setSheetState(() => isSubmitting = true);
 
                               try {
-                                if (session.patientId == 'guest') {
-                                  // Simulasi guest
-                                  await Future.delayed(const Duration(seconds: 1));
-                                  final idx = _visits.indexWhere((v) => v['id'] == visit['id']);
-                                  if (idx != -1) {
-                                    setState(() {
-                                      _visits[idx]['reschedule_requested'] = true;
-                                      _visits[idx]['reschedule_to_date'] =
-                                          selectedDate!.toIso8601String().split('T').first;
-                                      _visits[idx]['reschedule_reason'] = reasonController.text.trim();
-                                    });
-                                  }
-                                } else {
-                                  // Kirim riil ke Supabase RPC
-                                  await _patientService.requestReschedule(
-                                    visitId: visit['id'],
-                                    patientId: session.patientId,
-                                    newDate: selectedDate!,
-                                    reason: reasonController.text.trim(),
-                                  );
-                                  await _loadData(); // Segarkan data
+                                // Simulasi pengiriman reschedule lokal (in-memory) untuk keperluan demonstrasi
+                                await Future.delayed(const Duration(seconds: 1));
+                                final idx = _visits.indexWhere((v) => v['id'] == visit['id']);
+                                if (idx != -1) {
+                                  setState(() {
+                                    _visits[idx]['reschedule_requested'] = true;
+                                    _visits[idx]['reschedule_to_date'] =
+                                        selectedDate!.toIso8601String().split('T').first;
+                                    _visits[idx]['reschedule_reason'] = reasonController.text.trim();
+                                  });
                                 }
 
                                 if (mounted) {
