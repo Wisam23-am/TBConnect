@@ -25,6 +25,7 @@ class PatientBottomNavBar extends StatelessWidget {
       PatientBottomNavItem(
           icon: Icons.monitor_heart_outlined, label: 'Gejala'),
       PatientBottomNavItem(icon: Icons.monitor_weight_rounded, label: 'Berat'),
+      PatientBottomNavItem(icon: Icons.calendar_month_rounded, label: 'Jadwal'),
       PatientBottomNavItem(icon: Icons.person_rounded, label: 'Profil'),
     ],
   });

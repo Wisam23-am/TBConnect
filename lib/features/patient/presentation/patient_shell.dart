@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../../widgets/patient_bottom_nav_bar.dart';
 import 'patient_home_page.dart';
 import 'patient_symptoms_page.dart';
 import 'patient_weight_progress_page.dart';
+import 'patient_control_schedule_page.dart';
 import 'patient_profile_page.dart';
 
 /// Shared shell widget that wraps all patient pages with a single
@@ -25,11 +26,12 @@ class _PatientShellState extends State<PatientShell> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex.clamp(0, 3);
+    _currentIndex = widget.initialIndex.clamp(0, 4);
     _pages = const [
       PatientHomePage(),
       PatientSymptomsPage(),
       PatientWeightProgressPage(),
+      PatientControlSchedulePage(),
       PatientProfilePage(),
     ];
   }
