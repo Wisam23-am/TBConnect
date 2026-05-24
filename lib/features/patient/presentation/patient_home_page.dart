@@ -6,6 +6,7 @@ import '../../../services/auth_service.dart';
 import '../../../services/patient_service.dart';
 import '../../auth/presentation/portal_role_screen.dart';
 import 'patient_weight_input_page.dart';
+import 'patient_notification_page.dart';
 
 // ---------------------------------------------------------------------------
 // Medication slot status  (mirrors RPC return values)
@@ -620,14 +621,24 @@ class _PatientHomePageState extends State<PatientHomePage> {
           ),
         ),
         const Spacer(),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFFF0F4F8),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PatientNotificationPage(),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFFF0F4F8),
+            ),
+            child: const Icon(Icons.notifications_outlined,
+                size: 20, color: Color(0xFF112D4E)),
           ),
-          child: const Icon(Icons.notifications_outlined,
-              size: 20, color: Color(0xFF112D4E)),
         ),
       ],
     );

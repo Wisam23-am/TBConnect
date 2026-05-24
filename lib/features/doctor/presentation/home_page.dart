@@ -716,43 +716,92 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PatientDetailPage(
-                          patientName: name,
-                          patientId: patientId,
-                        ),
+              if (symptomsList.contains('Obat Terlewat'))
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        await _doctorService.sendReminder(patientId!);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Pengingat berhasil dikirim ke pasien!'),
+                              backgroundColor: Color(0xFF4CAF50),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Gagal mengirim pengingat: $e'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE19200),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                      width: 2,
-                      color: Color(0x33001833),
+                      elevation: 0,
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    child: const Text(
+                      'Kirim Pengingat',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontFamily: 'Manrope',
+                        fontWeight: FontWeight.w700,
+                        height: 1.33,
+                        letterSpacing: 0.60,
+                      ),
                     ),
                   ),
-                  child: const Text(
-                    'Detail Pasien',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFF001833),
-                      fontSize: 12,
-                      fontFamily: 'Manrope',
-                      fontWeight: FontWeight.w700,
-                      height: 1.33,
-                      letterSpacing: 0.60,
+                )
+              else
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PatientDetailPage(
+                            patientName: name,
+                            patientId: patientId,
+                          ),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                        width: 2,
+                        color: Color(0x33001833),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Detail Pasien',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFF001833),
+                        fontSize: 12,
+                        fontFamily: 'Manrope',
+                        fontWeight: FontWeight.w700,
+                        height: 1.33,
+                        letterSpacing: 0.60,
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
