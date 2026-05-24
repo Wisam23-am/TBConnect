@@ -6,6 +6,7 @@ import 'doctor_profile_page.dart';
 import 'patient_detail_page.dart';
 import 'package:tbconnect/widgets/doctor_bottom_nav_bar.dart';
 import 'package:tbconnect/services/doctor_service.dart';
+import 'package:tbconnect/services/patient_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, this.embedded = false});
@@ -25,6 +26,7 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = true;
   String? _errorMessage;
   final Set<String> _expandedPatients = {};
+  final Set<String> _sentReminders = {};
 
   DateTime _selectedDate = DateTime.now();
 
@@ -42,6 +44,18 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final data = await _doctorService.getTriageBoard();
+      
+      // Fetch actual symptoms for each patient to display in the UI
+      final patientService = PatientDataService();
+      for (var p in data) {
+        if (p['patient_id'] != null) {
+          final report = await patientService.getTodaySymptomReport(patientId: p['patient_id']);
+          if (report != null && report['symptoms'] != null) {
+             p['actual_symptoms'] = List<String>.from(report['symptoms']);
+          }
+        }
+      }
+      
       if (mounted) {
         setState(() {
           _patients = data;
@@ -163,11 +177,24 @@ class _HomePageState extends State<HomePage> {
   // ──────────────────────────────────────────────
   // Helper: gejala yang terdeteksi
   // ──────────────────────────────────────────────
+  // ──────────────────────────────────────────────
   List<String> _symptoms(Map<String, dynamic> patient) {
     final list = <String>[];
-    if (patient['has_emergency_symptom'] == true) {
+    
+    // 1. Tampilkan gejala aktual yang dipilih pasien (jika ada)
+    if (patient['actual_symptoms'] != null) {
+      final actualSymptoms = patient['actual_symptoms'] as List<String>;
+      for (final s in actualSymptoms) {
+        if (!list.contains(s)) list.add(s);
+      }
+    }
+    
+    // 2. Tambahkan peringatan darurat jika sistem menandainya
+    if (patient['has_emergency_symptom'] == true && !list.contains('Gejala Darurat')) {
       list.add('Gejala Darurat');
     }
+    
+    // 3. Tambahkan peringatan log
     if (patient['has_missed_medication'] == true) {
       list.add('Obat Terlewat');
     }
@@ -175,6 +202,7 @@ class _HomePageState extends State<HomePage> {
     if (adherence != null && (adherence as num) < 80) {
       list.add('Kepatuhan Rendah');
     }
+    
     if (list.isEmpty) {
       list.add('Tidak ada gejala');
     }
@@ -590,6 +618,7 @@ class _HomePageState extends State<HomePage> {
                 note: note,
                 name: name,
                 patientId: patientId,
+                showReminder: true, // Tombol pengingat selalu muncul
               ),
             ),
             crossFadeState: isExpanded
@@ -611,7 +640,10 @@ class _HomePageState extends State<HomePage> {
     required String note,
     required String name,
     required String? patientId,
+    required bool showReminder,
   }) {
+    final bool isReminderSent = _sentReminders.contains(patientId);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 16,
@@ -677,52 +709,98 @@ class _HomePageState extends State<HomePage> {
         // ── Action Buttons ──
         Padding(
           padding: const EdgeInsets.only(top: 20),
-          child: Row(
+          child: Column(
             spacing: 12,
             children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => DoctorFeedbackPage(
-                          patientName: name,
-                          patientId: patientId,
+              Row(
+                spacing: 12,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DoctorFeedbackPage(
+                              patientName: name,
+                              patientId: patientId,
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF001833),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Berikan Feedback',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontFamily: 'Manrope',
+                          fontWeight: FontWeight.w700,
+                          height: 1.33,
+                          letterSpacing: 0.60,
                         ),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF001833),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Berikan Feedback',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontFamily: 'Manrope',
-                      fontWeight: FontWeight.w700,
-                      height: 1.33,
-                      letterSpacing: 0.60,
                     ),
                   ),
-                ),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PatientDetailPage(
+                              patientName: name,
+                              patientId: patientId,
+                            ),
+                          ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          width: 2,
+                          color: Color(0x33001833),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Detail Pasien',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF001833),
+                          fontSize: 12,
+                          fontFamily: 'Manrope',
+                          fontWeight: FontWeight.w700,
+                          height: 1.33,
+                          letterSpacing: 0.60,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              if (symptomsList.contains('Obat Terlewat'))
-                Expanded(
+              if (showReminder)
+                SizedBox(
+                  width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () async {
+                    onPressed: isReminderSent ? null : () async {
                       try {
                         await _doctorService.sendReminder(patientId!);
                         if (mounted) {
+                          setState(() {
+                            _sentReminders.add(patientId);
+                          });
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Pengingat berhasil dikirim ke pasien!'),
@@ -742,57 +820,21 @@ class _HomePageState extends State<HomePage> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE19200),
+                      backgroundColor: isReminderSent ? const Color(0xFF43474E) : const Color(0xFFE19200),
                       foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(0xFF43474E),
+                      disabledForegroundColor: Colors.white70,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Kirim Pengingat',
+                    child: Text(
+                      isReminderSent ? 'Pengingat Terkirim' : 'Kirim Pengingat',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
-                        fontFamily: 'Manrope',
-                        fontWeight: FontWeight.w700,
-                        height: 1.33,
-                        letterSpacing: 0.60,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PatientDetailPage(
-                            patientName: name,
-                            patientId: patientId,
-                          ),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(
-                        width: 2,
-                        color: Color(0x33001833),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Detail Pasien',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF001833),
                         fontSize: 12,
                         fontFamily: 'Manrope',
                         fontWeight: FontWeight.w700,

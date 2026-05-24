@@ -15,11 +15,13 @@ class PatientDataService {
     required String patientId,
     required String session,
     String? reason,
+    DateTime? date,
   }) async {
     await _supabase.rpc('log_medication_taken', params: {
       'p_patient_id': patientId,
       'p_session': session,
       if (reason != null && reason.isNotEmpty) 'p_reason': reason,
+      if (date != null) 'p_log_date': date.toIso8601String().split('T').first,
     });
   }
 
@@ -64,13 +66,15 @@ class PatientDataService {
   }
 
   // ----------------------------------------------------------
-  // Get status obat hari ini
+  // Get status obat hari ini / tanggal tertentu
   // ----------------------------------------------------------
   Future<Map<String, dynamic>> getTodayMedications({
     required String patientId,
+    DateTime? date,
   }) async {
     final result = await _supabase.rpc('get_today_medication_status', params: {
       'p_patient_id': patientId,
+      if (date != null) 'p_target_date': date.toIso8601String().split('T').first,
     });
     return Map<String, dynamic>.from(result);
   }
@@ -178,5 +182,14 @@ class PatientDataService {
     });
     final reports = result['reports'] as List? ?? [];
     return reports.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+  // ----------------------------------------------------------
+  // Get full patient profile (including doctor details)
+  // ----------------------------------------------------------
+  Future<Map<String, dynamic>> getPatientProfile(String patientId) async {
+    final response = await _supabase.rpc('get_patient_profile', params: {
+      'p_patient_id': patientId,
+    });
+    return Map<String, dynamic>.from(response);
   }
 }
