@@ -159,4 +159,14 @@ class DoctorService {
         .select()
         .eq('doctor_id', doctorId);
   }
+
+  // ----------------------------------------------------------
+  // Kirim Pengingat Minum Obat ke Pasien
+  // ----------------------------------------------------------
+  Future<void> sendReminder(String patientId) async {
+    await _supabase.rpc(
+      'send_patient_reminder',
+      params: {'p_patient_id': patientId},
+    );
+  }
 }
