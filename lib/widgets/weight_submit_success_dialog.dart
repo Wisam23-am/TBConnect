@@ -4,20 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 /// Widget Dialog untuk menampilkan pesan sukses input berat badan
 /// Dialog ini akan otomatis ditutup setelah 2 detik
 class WeightSubmitSuccessDialog extends StatefulWidget {
-  final VoidCallback? onDismiss;
-
-  const WeightSubmitSuccessDialog({
-    super.key,
-    this.onDismiss,
-  });
+  const WeightSubmitSuccessDialog({super.key});
 
   static Future<void> show(BuildContext context) {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => WeightSubmitSuccessDialog(
-        onDismiss: () => Navigator.pop(ctx),
-      ),
+      builder: (ctx) => const WeightSubmitSuccessDialog(),
     );
   }
 
@@ -34,7 +27,6 @@ class _WeightSubmitSuccessDialogState extends State<WeightSubmitSuccessDialog> {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         Navigator.pop(context);
-        widget.onDismiss?.call();
       }
     });
   }
@@ -103,7 +95,6 @@ class _WeightSubmitSuccessDialogState extends State<WeightSubmitSuccessDialog> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  widget.onDismiss?.call();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF001833),
