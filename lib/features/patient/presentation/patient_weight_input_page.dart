@@ -27,8 +27,10 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
 
   bool _isLoading = false;
   bool _isSubmitting = false;
+  bool _canSubmitWeight = true;
   double? _previousWeight;
   DateTime? _previousWeightDate;
+  DateTime? _nextAllowedWeightDate;
   List<Map<String, dynamic>> _weightHistory = [];
   String? _error;
 
@@ -54,12 +56,19 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
 
         if (weightHistory.isNotEmpty) {
           final latest = weightHistory.first;
+          final latestDate = latest['log_date'] != null
+              ? DateTime.tryParse(latest['log_date'] as String)
+              : null;
           setState(() {
             _weightHistory = weightHistory;
             _previousWeight = (latest['weight_kg'] as num?)?.toDouble();
-            _previousWeightDate = latest['log_date'] != null
-                ? DateTime.tryParse(latest['log_date'] as String)
-                : null;
+            _previousWeightDate = latestDate;
+            _syncWeeklySubmissionLimit(latestDate);
+          });
+        } else {
+          setState(() {
+            _canSubmitWeight = true;
+            _nextAllowedWeightDate = null;
           });
         }
       }
@@ -68,6 +77,77 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  void _syncWeeklySubmissionLimit(DateTime? latestDate) {
+    if (latestDate == null) {
+      _canSubmitWeight = true;
+      _nextAllowedWeightDate = null;
+      return;
+    }
+
+    final now = DateTime.now();
+    final latestWeekStart = _startOfWeek(latestDate);
+    final currentWeekStart = _startOfWeek(now);
+
+    final isSameWeek = latestWeekStart.year == currentWeekStart.year &&
+        latestWeekStart.month == currentWeekStart.month &&
+        latestWeekStart.day == currentWeekStart.day;
+
+    if (isSameWeek) {
+      _canSubmitWeight = false;
+      _nextAllowedWeightDate = currentWeekStart.add(const Duration(days: 7));
+    } else {
+      _canSubmitWeight = true;
+      _nextAllowedWeightDate = null;
+    }
+  }
+
+  DateTime _startOfWeek(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    return normalized.subtract(Duration(days: normalized.weekday - 1));
+  }
+
+  String _formatLongDate(DateTime dt) {
+    const months = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+  }
+
+  Future<void> _handleSubmitWeight() async {
+    if (!_canSubmitWeight) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _nextAllowedWeightDate != null
+                  ? 'Berat badan hanya bisa diinput 1x seminggu. Coba lagi mulai ${_formatLongDate(_nextAllowedWeightDate!)}.'
+                  : 'Berat badan sudah diinput minggu ini.',
+            ),
+            backgroundColor: Colors.orangeAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    await _submitWeight();
   }
 
   Future<void> _submitWeight() async {
@@ -95,6 +175,20 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
         patientId: session.patientId,
         weightKg: weight,
       );
+
+      final now = DateTime.now();
+      setState(() {
+        _previousWeight = weight;
+        _previousWeightDate = now;
+        _weightHistory = [
+          {
+            'weight_kg': weight,
+            'log_date': now.toIso8601String().split('T').first
+          },
+          ..._weightHistory,
+        ];
+        _syncWeeklySubmissionLimit(now);
+      });
 
       if (mounted) {
         await WeightSubmitSuccessDialog.show(context);
@@ -444,13 +538,37 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
 
                   const SizedBox(height: 24),
 
+                  if (!_canSubmitWeight && _nextAllowedWeightDate != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3E0),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFFFB74D)),
+                      ),
+                      child: Text(
+                        'Berat badan sudah diinput minggu ini. Input berikutnya bisa mulai ${_formatLongDate(_nextAllowedWeightDate!)}.',
+                        style: GoogleFonts.manrope(
+                          color: const Color(0xFF8A4B00),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
                   // ─────────────────────────────────────────────────────────
                   // Submit button
                   // ─────────────────────────────────────────────────────────
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _isSubmitting ? null : _submitWeight,
+                      onPressed: (_isSubmitting || !_canSubmitWeight)
+                          ? null
+                          : _handleSubmitWeight,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF001833),
                         disabledBackgroundColor: const Color(0xFFCED4DB),

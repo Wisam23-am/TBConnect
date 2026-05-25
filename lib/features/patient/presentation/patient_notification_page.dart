@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../services/auth_service.dart';
+import '../../../services/notification_realtime_service.dart';
 import '../../../services/patient_service.dart';
 import '../../../services/notification_service.dart';
 
@@ -73,19 +75,69 @@ class PatientNotificationPage extends StatefulWidget {
 }
 
 class _PatientNotificationPageState extends State<PatientNotificationPage> {
-  final _supabase = Supabase.instance.client;
   final _authService = AuthService();
   final _patientService = PatientDataService();
+  final _realtimeService = NotificationRealtimeService.instance;
 
   List<NotificationModel> _notifications = [];
   List<MedicationReminderCard> _medicationReminders = [];
   bool _isLoading = true;
   String? _error;
+  StreamSubscription<NotificationSnapshot>? _notificationSubscription;
+  Timer? _medicationRefreshTimer;
+  final Set<String> _seenNotificationIds = {};
+  String? _currentPatientId;
 
   @override
   void initState() {
     super.initState();
-    _loadAll();
+    _bootstrap();
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    _medicationRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _bootstrap() async {
+    final session = await _authService.getPatientSession();
+    if (!mounted) return;
+
+    if (session == null || session.patientId == 'guest') {
+      setState(() {
+        _notifications = _buildMockNotifications();
+        _medicationReminders = _buildSimulatedReminders(DateTime.now());
+        _isLoading = false;
+      });
+      return;
+    }
+
+    _currentPatientId = session.patientId;
+    await _realtimeService.start(session.patientId);
+    _notificationSubscription = _realtimeService.stream.listen((snapshot) {
+      if (!mounted) return;
+      setState(() {
+        _notifications = snapshot.notifications
+            .map((e) => NotificationModel.fromJson(e))
+            .toList();
+        for (final item in snapshot.notifications) {
+          final id = item['id']?.toString();
+          if (id != null && id.isNotEmpty) {
+            _seenNotificationIds.add(id);
+          }
+        }
+        _isLoading = false;
+      });
+      _refreshMedicationStatus();
+    });
+
+    await _loadAll();
+    _medicationRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _refreshMedicationStatus(),
+    );
   }
 
   Future<void> _loadAll() async {
@@ -96,8 +148,13 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
     });
     await Future.wait([
       _fetchNotifications(),
+      _realtimeService.refreshNow(),
       _fetchMedicationStatus(),
     ]);
+  }
+
+  Future<void> _refreshMedicationStatus() async {
+    await _fetchMedicationStatus();
   }
 
   // ──────────────────────────────────────────────────────────────
@@ -116,24 +173,20 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
         return;
       }
 
-      final response = await _supabase.rpc(
-        'get_patient_notifications',
-        params: {'p_patient_id': session.patientId},
+      final data = await _patientService.getPatientNotifications(
+        patientId: session.patientId,
       );
-
-      final List<dynamic> data = response as List<dynamic>;
       if (mounted) {
         setState(() {
-          _notifications = data
-              .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
-              .toList();
+          _notifications =
+              data.map((e) => NotificationModel.fromJson(e)).toList();
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Gagal memuat notifikasi: $e';
+          _error = 'Gagal memuat notifikasi:\n${_formatBackendError(e)}';
           _isLoading = false;
         });
       }
@@ -281,9 +334,11 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
     }
 
     try {
-      await _supabase.rpc(
-        'mark_notification_read',
-        params: {'p_notif_id': notificationId},
+      await _patientService.markNotificationRead(
+        patientId: _currentPatientId ??
+            (await _authService.getPatientSession())?.patientId ??
+            '',
+        notificationId: notificationId,
       );
       if (mounted) {
         setState(() {
@@ -307,12 +362,54 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memperbarui: $e'),
+            content: Text('Gagal memperbarui:\n${_formatBackendError(e)}'),
             backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 6),
           ),
         );
       }
     }
+  }
+
+  String _formatBackendError(Object error) {
+    final dynamic e = error;
+    final lines = <String>[];
+
+    String? readField(String name) {
+      try {
+        final value = switch (name) {
+          'message' => e.message,
+          'details' => e.details,
+          'hint' => e.hint,
+          'code' => e.code,
+          _ => null,
+        };
+        if (value == null) return null;
+        final text = value.toString().trim();
+        return text.isEmpty ? null : text;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final message = readField('message') ?? error.toString();
+    final details = readField('details');
+    final hint = readField('hint');
+    final code = readField('code');
+
+    lines.add(message.replaceAll('Exception: ', '').trim());
+    if (details != null && !lines.contains(details)) {
+      lines.add(details);
+    }
+    if (hint != null && !lines.contains(hint)) {
+      lines.add('Hint: $hint');
+    }
+    if (code != null && !lines.contains(code)) {
+      lines.add('Code: $code');
+    }
+
+    return lines.join('\n');
   }
 
   // ──────────────────────────────────────────────────────────────
