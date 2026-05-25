@@ -74,7 +74,8 @@ class PatientDataService {
   }) async {
     final result = await _supabase.rpc('get_today_medication_status', params: {
       'p_patient_id': patientId,
-      if (date != null) 'p_target_date': date.toIso8601String().split('T').first,
+      if (date != null)
+        'p_target_date': date.toIso8601String().split('T').first,
     });
     return Map<String, dynamic>.from(result);
   }
@@ -88,6 +89,25 @@ class PatientDataService {
     return await _supabase.rpc('get_patient_notifications', params: {
       'p_patient_id': patientId,
     });
+  }
+
+  // ----------------------------------------------------------
+  // Tandai notifikasi sudah dibaca
+  // ----------------------------------------------------------
+  Future<void> markNotificationRead({
+    required String patientId,
+    required String notificationId,
+  }) async {
+    try {
+      await _supabase.rpc('mark_notification_read', params: {
+        'p_notif_id': notificationId,
+      });
+    } catch (_) {
+      await _supabase.rpc('mark_notification_read', params: {
+        'p_patient_id': patientId,
+        'p_notification_id': notificationId,
+      });
+    }
   }
 
   // ----------------------------------------------------------
@@ -183,6 +203,7 @@ class PatientDataService {
     final reports = result['reports'] as List? ?? [];
     return reports.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
+
   // ----------------------------------------------------------
   // Get full patient profile (including doctor details)
   // ----------------------------------------------------------

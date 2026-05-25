@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/auth_service.dart';
+import '../../../services/notification_realtime_service.dart';
 import '../../../services/patient_service.dart';
 import '../../auth/presentation/portal_role_screen.dart';
 import 'patient_weight_input_page.dart';
@@ -58,6 +60,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
   final _authService = AuthService();
   final _patientService = PatientDataService();
   final _supabase = Supabase.instance.client; // untuk RPC calls
+  final _realtimeService = NotificationRealtimeService.instance;
 
   // ── Session & data ──
   PatientSession? _session;
@@ -130,6 +133,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
       final session = await _authService.getPatientSession();
       if (session == null) {
         if (!widget.allowGuestMode) {
+          _realtimeService.stop();
           if (mounted) {
             Navigator.pushAndRemoveUntil(
               context,
@@ -201,6 +205,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
           _error = null;
         });
       }
+
+      await _realtimeService.start(session.patientId);
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -500,6 +506,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
             const SizedBox(height: 16),
             TextButton(
               onPressed: () async {
+                _realtimeService.stop();
                 await _authService.logoutPatient();
                 if (mounted) {
                   Navigator.pushAndRemoveUntil(
@@ -624,25 +631,49 @@ class _PatientHomePageState extends State<PatientHomePage> {
           ),
         ),
         const Spacer(),
-        // Larger, more responsive notification bell with blue background
-        Material(
-          color: const Color(0xFF2A609C),
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PatientNotificationPage(),
+        StreamBuilder<NotificationSnapshot>(
+          stream: _realtimeService.stream,
+          builder: (context, snapshot) {
+            final unreadCount = snapshot.data?.unreadCount ?? 0;
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Material(
+                  color: const Color(0xFF2A609C),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PatientNotificationPage(),
+                        ),
+                      );
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Icon(Icons.notifications,
+                          size: 24, color: Colors.white),
+                    ),
+                  ),
                 ),
-              );
-            },
-            child: const Padding(
-              padding: EdgeInsets.all(12),
-              child: Icon(Icons.notifications, size: 24, color: Colors.white),
-            ),
-          ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: -1,
+                    top: -1,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE53935),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );
