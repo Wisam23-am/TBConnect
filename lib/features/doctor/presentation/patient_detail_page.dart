@@ -64,7 +64,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
   int get _totalDosesForDate => 3;
   int get _takenDosesForDate {
     final logs = _dateMedicationLogs();
-    return logs.where((l) => l['status'] == 'taken').length;
+    return logs.where((l) => l['status'] == 'taken' || l['status'] == 'late').length;
   }
 
   double get _adherencePercent {
