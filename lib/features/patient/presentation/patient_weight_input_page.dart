@@ -39,6 +39,7 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
     super.initState();
     _previousWeight = widget.initialWeight;
     _previousWeightDate = widget.previousWeightDate;
+    _syncWeeklySubmissionLimit(_previousWeightDate);
     _loadPreviousWeight();
   }
 
@@ -75,7 +76,7 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
     } catch (e) {
       setState(() => _error = 'Gagal memuat riwayat berat badan: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -109,44 +110,12 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
   }
 
   String _formatLongDate(DateTime dt) {
-    const months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
   Future<void> _handleSubmitWeight() async {
-    if (!_canSubmitWeight) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _nextAllowedWeightDate != null
-                  ? 'Berat badan hanya bisa diinput 1x seminggu. Coba lagi mulai ${_formatLongDate(_nextAllowedWeightDate!)}.'
-                  : 'Berat badan sudah diinput minggu ini.',
-            ),
-            backgroundColor: Colors.orangeAccent,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
+    if (!_canSubmitWeight) return;
     await _submitWeight();
   }
 
@@ -157,14 +126,7 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
     final session = await _authService.getPatientSession();
 
     if (session == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sesi login tidak valid'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sesi login tidak valid')));
       return;
     }
 
@@ -181,10 +143,7 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
         _previousWeight = weight;
         _previousWeightDate = now;
         _weightHistory = [
-          {
-            'weight_kg': weight,
-            'log_date': now.toIso8601String().split('T').first
-          },
+          {'weight_kg': weight, 'log_date': now.toIso8601String().split('T').first},
           ..._weightHistory,
         ];
         _syncWeeklySubmissionLimit(now);
@@ -193,104 +152,14 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
       if (mounted) {
         await WeightSubmitSuccessDialog.show(context);
         if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (_) => const PatientShell(initialIndex: 0),
-            ),
-            (route) => false,
-          );
+          Navigator.pop(context, weight);
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menyimpan: $e'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
     } finally {
-      setState(() => _isSubmitting = false);
+      if (mounted) setState(() => _isSubmitting = false);
     }
-  }
-
-  String _formatDate(DateTime dt) {
-    const months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ];
-    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
-  }
-
-  Widget _buildHistoryItem(Map<String, dynamic> item) {
-    final weight = (item['weight_kg'] as num?)?.toDouble();
-    final date = item['log_date'] as String?;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE1E3E4)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8EEF5),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.monitor_weight_rounded,
-              color: Color(0xFF112D4E),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'BERAT SEBELUMNYA',
-                  style: GoogleFonts.manrope(
-                    color: const Color(0xFF43474E),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${weight?.toStringAsFixed(1) ?? '-'} kg${date != null ? '  (${_formatDate(DateTime.parse(date))})' : ''}',
-                  style: GoogleFonts.manrope(
-                    color: const Color(0xFF001833),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -302,325 +171,223 @@ class _PatientWeightInputPageState extends State<PatientWeightInputPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFF112D4E),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(
-            Icons.arrow_back_rounded,
-            color: Color(0xFF001833),
-            size: 24,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+          onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Input Berat Badan',
+          'Catat Berat Badan',
           style: GoogleFonts.manrope(
-            color: const Color(0xFF001833),
-            fontSize: 22,
+            color: Colors.white,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
-            letterSpacing: -0.22,
+            letterSpacing: 0.5,
           ),
         ),
-        centerTitle: false,
+        centerTitle: true,
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF112D4E)),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  // ─────────────────────────────────────────────────────────
-                  // Description
-                  // ─────────────────────────────────────────────────────────
-                  Text(
-                    'Catat berat badan Anda untuk memantau kemajuan pemulihan.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(
-                      color: const Color(0xFF43474E),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          : Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 40),
+                        // Circular icon
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.1),
+                            border: Border.all(color: Colors.white.withOpacity(0.2), width: 2),
+                          ),
+                          child: const Icon(Icons.monitor_weight_outlined, color: Colors.white, size: 40),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Berapa berat badan\nAnda hari ini?',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.manrope(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            height: 1.3,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 48),
 
-                  // ─────────────────────────────────────────────────────────
-                  // Input Form
-                  // ─────────────────────────────────────────────────────────
-                  Form(
-                    key: _formKey,
-                    child: Container(
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x0C000000),
-                            blurRadius: 2,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _weightController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                              signed: false,
-                            ),
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.manrope(
-                              fontSize: 48,
-                              fontWeight: FontWeight.w300,
-                              color: const Color(0xFFB0B7C6),
-                              letterSpacing: -0.48,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: '00.0',
-                              hintStyle: GoogleFonts.manrope(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w300,
-                                color: const Color(0xFFD5D8DD),
-                                letterSpacing: -0.48,
-                              ),
-                              border: InputBorder.none,
-                              suffixText: 'kg',
-                              suffixStyle: GoogleFonts.manrope(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w400,
-                                color: const Color(0xFF001833),
-                                letterSpacing: -0.28,
-                              ),
-                              contentPadding: const EdgeInsets.only(bottom: 8),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Berat badan wajib diisi';
-                              }
-                              final weight = double.tryParse(value.trim());
-                              if (weight == null) {
-                                return 'Format angka tidak valid';
-                              }
-                              if (weight <= 0) {
-                                return 'Berat badan harus lebih dari 0';
-                              }
-                              if (weight > 200) {
-                                return 'Berat badan tidak wajar';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            height: 1,
-                            color: const Color(0xFFE1E3E4),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // ─────────────────────────────────────────────────────────
-                  // Previous weight card
-                  // ─────────────────────────────────────────────────────────
-                  if (_previousWeight != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE1E3E4)),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x0C000000),
-                            blurRadius: 2,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
+                        // Form input
+                        Form(
+                          key: _formKey,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 32),
+                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8EEF5),
-                              borderRadius: BorderRadius.circular(10),
+                              color: _canSubmitWeight ? Colors.white.withOpacity(0.08) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: _canSubmitWeight ? Colors.white.withOpacity(0.3) : Colors.white.withOpacity(0.1),
+                                width: 1.5,
+                              ),
+                              boxShadow: _canSubmitWeight
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      )
+                                    ]
+                                  : null,
                             ),
-                            child: const Icon(
-                              Icons.history_rounded,
-                              color: Color(0xFF112D4E),
-                              size: 22,
+                            child: Column(
+                              children: [
+                                TextFormField(
+                                  controller: _weightController,
+                                  enabled: _canSubmitWeight,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: false),
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 64,
+                                    fontWeight: FontWeight.w800,
+                                    color: _canSubmitWeight ? Colors.white : Colors.white.withOpacity(0.4),
+                                    letterSpacing: -2.0,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: '0.0',
+                                    hintStyle: GoogleFonts.manrope(
+                                      fontSize: 64,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white.withOpacity(0.2),
+                                    ),
+                                    border: InputBorder.none,
+                                    suffixText: 'kg',
+                                    suffixStyle: GoogleFonts.manrope(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                      color: _canSubmitWeight ? Colors.white70 : Colors.white30,
+                                    ),
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) return 'Wajib diisi';
+                                    final weight = double.tryParse(value.trim());
+                                    if (weight == null) return 'Format salah';
+                                    if (weight <= 0 || weight > 300) return 'Tidak wajar';
+                                    return null;
+                                  },
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        
+                        const SizedBox(height: 48),
+
+                        if (!_canSubmitWeight && _nextAllowedWeightDate != null)
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 24),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                            ),
+                            child: Row(
                               children: [
-                                Text(
-                                  'BERAT SEBELUMNYA',
-                                  style: GoogleFonts.manrope(
-                                    color: const Color(0xFF43474E),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.6,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${_previousWeight!.toStringAsFixed(1)} kg${_previousWeightDate != null ? '  (${_formatDate(_previousWeightDate!)})' : ''}',
-                                  style: GoogleFonts.manrope(
-                                    color: const Color(0xFF001833),
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
+                                const Icon(Icons.lock_clock_rounded, color: Colors.orangeAccent, size: 32),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Terjadwal Minggu Depan',
+                                        style: GoogleFonts.manrope(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Anda sudah mengisi minggu ini. Tunggu hari Senin, ${_formatLongDate(_nextAllowedWeightDate!)}.',
+                                        style: GoogleFonts.manrope(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500, height: 1.4),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  Text(
-                    'Riwayat Berat Badan',
-                    style: GoogleFonts.manrope(
-                      color: const Color(0xFF001833),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.18,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (_weightHistory.isNotEmpty)
-                    Column(
-                      children: [
-                        for (final item in _weightHistory) ...[
-                          _buildHistoryItem(item),
-                          const SizedBox(height: 10),
-                        ],
+                          
+                        const SizedBox(height: 48), // Padding bawah agar tidak mepet dengan tombol
                       ],
-                    )
-                  else
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFE1E3E4)),
-                      ),
-                      child: Text(
-                        'Belum ada history berat badan sebelumnya.',
-                        style: GoogleFonts.manrope(
-                          color: const Color(0xFF43474E),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 24),
-
-                  if (!_canSubmitWeight && _nextAllowedWeightDate != null) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3E0),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFFFB74D)),
-                      ),
-                      child: Text(
-                        'Berat badan sudah diinput minggu ini. Input berikutnya bisa mulai ${_formatLongDate(_nextAllowedWeightDate!)}.',
-                        style: GoogleFonts.manrope(
-                          color: const Color(0xFF8A4B00),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // ─────────────────────────────────────────────────────────
-                  // Submit button
-                  // ─────────────────────────────────────────────────────────
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: (_isSubmitting || !_canSubmitWeight)
-                          ? null
-                          : _handleSubmitWeight,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF001833),
-                        disabledBackgroundColor: const Color(0xFFCED4DB),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: _isSubmitting
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              'Simpan Berat Badan',
-                              style: GoogleFonts.manrope(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.60,
-                              ),
-                            ),
                     ),
                   ),
-
-                  // Error message (jika ada)
-                  if (_error != null) ...[
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFEBEE),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFEF5350)),
-                      ),
-                      child: Text(
-                        _error!,
-                        style: GoogleFonts.manrope(
-                          color: const Color(0xFFC62828),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                ),
+                
+                // Bottom Button Container
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(32),
+                      topRight: Radius.circular(32),
                     ),
-                  ],
-                ],
-              ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (_previousWeight != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 24),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.history, color: Color(0xFF5A8DA0), size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Berat sebelumnya: ${_previousWeight!.toStringAsFixed(1)} kg',
+                                  style: GoogleFonts.manrope(
+                                    color: const Color(0xFF5A8DA0),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ElevatedButton(
+                          onPressed: (_isSubmitting || !_canSubmitWeight) ? null : _handleSubmitWeight,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF112D4E),
+                            disabledBackgroundColor: const Color(0xFFCED4DB),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            elevation: 8,
+                            shadowColor: const Color(0xFF112D4E).withOpacity(0.5),
+                          ),
+                          child: _isSubmitting
+                              ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                              : Text(
+                                  'Simpan Sekarang',
+                                  style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
     );
   }

@@ -117,12 +117,17 @@ class PatientDataService {
     required String patientId,
     int limit = 10,
   }) async {
-    return await _supabase
-        .from('weight_logs')
-        .select()
-        .eq('patient_id', patientId)
-        .order('log_date', ascending: false)
-        .limit(limit);
+    try {
+      final response = await _supabase.rpc('get_patient_weight_history', params: {
+        'p_patient_id': patientId,
+        'p_limit': limit,
+      });
+      final logs = response as List<dynamic>? ?? [];
+      return logs.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      print("RPC fetch failed: $e");
+      return [];
+    }
   }
 
   // ----------------------------------------------------------

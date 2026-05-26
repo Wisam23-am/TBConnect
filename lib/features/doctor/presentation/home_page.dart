@@ -213,6 +213,13 @@ class _HomePageState extends State<HomePage> {
   // Helper: catatan tambahan
   // ──────────────────────────────────────────────
   String _additionalNote(Map<String, dynamic> patient) {
+    // Cek apakah ada catatan dari pasien (biasanya di kolom notes, latest_notes, atau patient_notes)
+    final patientNote = patient['notes'] ?? patient['latest_notes'] ?? patient['patient_notes'];
+    if (patientNote != null && patientNote.toString().trim().isNotEmpty) {
+      return patientNote.toString().trim();
+    }
+
+    // Jika tidak ada catatan dari pasien, gunakan logika triage default
     final hasEmergency = patient['has_emergency_symptom'] == true;
     final hasMissed = patient['has_missed_medication'] == true;
     final adherence = patient['adherence_7d_pct'];
@@ -226,7 +233,7 @@ class _HomePageState extends State<HomePage> {
     if (adherence != null && (adherence as num) < 80) {
       return 'Kepatuhan minum obat perlu ditingkatkan. Berikan edukasi dan motivasi ke pasien.';
     }
-    return 'Pasien dalam kondisi stabil. Pantau secara rutin.';
+    return 'Tidak ada catatan tambahan dari pasien.';
   }
 
   // ──────────────────────────────────────────────
