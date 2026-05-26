@@ -913,45 +913,40 @@ class _PatientHomePageState extends State<PatientHomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF004882),
-                  borderRadius: BorderRadius.circular(999),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF004882),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Icon(Icons.monitor_weight_outlined,
+                      color: Colors.white, size: 24),
                 ),
-                child: const Icon(Icons.monitor_weight_outlined,
-                    color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Update Berat\nBadan',
-                    style: GoogleFonts.manrope(
-                      color: const Color(0xFF001C39),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      height: 1.56,
-                    ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Update Berat\nBadan',
+                        style: GoogleFonts.manrope(
+                          color: const Color(0xFF001C39),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Pantau perkembangan\nfisik Anda',
-                    style: GoogleFonts.manrope(
-                      color: const Color(0xFF004882),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.60,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: _navigateToWeightInput,
             child: Container(
