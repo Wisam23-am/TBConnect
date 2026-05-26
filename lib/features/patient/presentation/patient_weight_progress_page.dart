@@ -8,8 +8,7 @@ class PatientWeightProgressPage extends StatefulWidget {
   const PatientWeightProgressPage({super.key});
 
   @override
-  State<PatientWeightProgressPage> createState() =>
-      _PatientWeightProgressPageState();
+  State<PatientWeightProgressPage> createState() => _PatientWeightProgressPageState();
 }
 
 class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
@@ -39,20 +38,25 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
 
       final logs = await _patientService.getWeightHistory(
         patientId: session.patientId,
-        limit: 20, // Get more to calculate weeks
+        limit: 20,
       );
 
       if (logs.isNotEmpty) {
         setState(() {
           _weightLogs = logs;
-          _currentWeek = _calculateWeekLabel(
-              DateTime.tryParse(logs.first['log_date'] as String? ?? ''));
+          _currentWeek = _calculateWeekLabel(DateTime.tryParse(logs.first['log_date'] as String? ?? ''));
+        });
+      } else {
+        setState(() {
+          _weightLogs = [];
         });
       }
     } catch (e) {
       setState(() => _error = 'Gagal memuat riwayat: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -77,20 +81,7 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      const months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'Mei',
-        'Jun',
-        'Jul',
-        'Agu',
-        'Sep',
-        'Okt',
-        'Nov',
-        'Des',
-      ];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (_) {
       return dateStr;
@@ -101,289 +92,325 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
     final result = await Navigator.push<double>(
       context,
       MaterialPageRoute(
-        builder: (ctx) => const PatientWeightInputPage(),
+        builder: (ctx) => PatientWeightInputPage(
+          initialWeight: _weightLogs.isNotEmpty ? (_weightLogs.first['weight_kg'] as num?)?.toDouble() : null,
+          previousWeightDate: _weightLogs.isNotEmpty ? DateTime.tryParse(_weightLogs.first['log_date'] as String? ?? '') : null,
+        ),
       ),
     );
 
     if (result != null && mounted) {
       _loadWeightHistory();
+    } else {
+      _loadWeightHistory(); 
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          'Progres Berat Badan',
-          style: GoogleFonts.manrope(
-            color: const Color(0xFF001833),
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.22,
-          ),
-        ),
-        centerTitle: false,
-      ),
+      backgroundColor: const Color(0xFFF3F5F9), // Lighter background for modern look
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF112D4E)),
-            )
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF112D4E)))
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 64, color: Colors.red.shade300),
-                      const SizedBox(height: 16),
-                      Text(_error!,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.manrope(fontSize: 14)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadWeightHistory,
-                        child: const Text('Coba Lagi'),
-                      ),
-                    ],
-                  ),
-                )
+              ? _buildErrorState()
               : RefreshIndicator(
                   onRefresh: _loadWeightHistory,
                   color: const Color(0xFF112D4E),
-                  child: SingleChildScrollView(
+                  child: CustomScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ─────────────────────────────────────────────────
-                        // Weight Schedule Card
-                        // ─────────────────────────────────────────────────
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x0C000000),
-                                blurRadius: 2,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
-                          ),
+                    slivers: [
+                      _buildSliverAppBar(),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              _buildActionCard(),
+                              const SizedBox(height: 32),
                               Text(
-                                'JADWAL TIMBANG',
+                                'Riwayat Berat Badan',
                                 style: GoogleFonts.manrope(
-                                  color: const Color(0xFF43474E),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.60,
+                                  color: const Color(0xFF112D4E),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _currentWeek ?? 'Minggu Ini',
-                                        style: GoogleFonts.manrope(
-                                          color: const Color(0xFF001833),
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: -0.24,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.calendar_today,
-                                              size: 16,
-                                              color: Color(0xFF43474E)),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Tanggal: Hari Ini',
-                                            style: GoogleFonts.manrope(
-                                              color: const Color(0xFF43474E),
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFD4E3FF),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: const Icon(
-                                      Icons.monitor_weight_outlined,
-                                      color: Color(0xFF2A609C),
-                                      size: 28,
-                                    ),
-                                  ),
-                                ],
                               ),
                               const SizedBox(height: 16),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: _navigateToWeightInput,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF2A609C),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.add, size: 20),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Catat Berat Minggu Ini',
-                                        style: GoogleFonts.manrope(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                              _buildWeightTimeline(),
+                              const SizedBox(height: 40),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
-
-                        // ─────────────────────────────────────────────────
-                        // Weight Log History
-                        // ─────────────────────────────────────────────────
-                        Text(
-                          'Log Berat Badan',
-                          style: GoogleFonts.manrope(
-                            color: const Color(0xFF001833),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.18,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        if (_weightLogs.isEmpty)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 32),
-                            child: Column(
-                              children: [
-                                Icon(Icons.inbox_rounded,
-                                    size: 48, color: Colors.grey.shade300),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Belum ada catatan berat badan',
-                                  style: GoogleFonts.manrope(
-                                    color: const Color(0xFF94A3B8),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          Column(
-                            children: List.generate(_weightLogs.length, (i) {
-                              final log = _weightLogs[i];
-                              final weight =
-                                  (log['weight_kg'] as num).toDouble();
-                              final date = log['log_date'] as String? ?? '';
-
-                              return Container(
-                                margin: EdgeInsets.only(
-                                  bottom: i < _weightLogs.length - 1 ? 12 : 0,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: const Color(0xFFE1E3E4),
-                                      width: i < _weightLogs.length - 1 ? 1 : 0,
-                                    ),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      _formatDate(date),
-                                      style: GoogleFonts.manrope(
-                                        color: const Color(0xFF43474E),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${weight.toStringAsFixed(1)} kg',
-                                      style: GoogleFonts.manrope(
-                                        color: const Color(0xFF2A609C),
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                          ),
-
-                        const SizedBox(height: 24),
-
-                        // ─────────────────────────────────────────────────
-                        // Footer note
-                        // ─────────────────────────────────────────────────
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Text(
-                            'Mencatat berat badan secara rutin membantu tenaga medis memantau efektivitas pengobatan Anda.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.manrope(
-                              color: const Color(0xFF94A3B8),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                              height: 1.54,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+          const SizedBox(height: 16),
+          Text(_error!, textAlign: TextAlign.center, style: GoogleFonts.manrope(fontSize: 14)),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadWeightHistory,
+            child: const Text('Coba Lagi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 200,
+      pinned: true,
+      elevation: 0,
+      backgroundColor: const Color(0xFF112D4E),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () => Navigator.pop(context),
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF112D4E), Color(0xFF3F72AF)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.monitor_weight_outlined, color: Colors.white, size: 32),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Progres Berat Badan',
+                    style: GoogleFonts.manrope(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Pantau terus perkembangan fisik Anda',
+                    style: GoogleFonts.manrope(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0A112D4E), blurRadius: 20, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'JADWAL TIMBANG',
+                    style: GoogleFonts.manrope(
+                      color: const Color(0xFF5A8DA0),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _currentWeek ?? 'Minggu Ini',
+                    style: GoogleFonts.manrope(
+                      color: const Color(0xFF112D4E),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5F0FF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.add_chart, color: Color(0xFF3F72AF), size: 30),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _navigateToWeightInput,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF112D4E),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.add, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Catat Berat Badan',
+                    style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeightTimeline() {
+    if (_weightLogs.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE1E3E4)),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.inbox_rounded, size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(
+              'Belum ada riwayat berat badan',
+              style: GoogleFonts.manrope(color: const Color(0xFF5A8DA0), fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: List.generate(_weightLogs.length, (i) {
+        final log = _weightLogs[i];
+        final weight = (log['weight_kg'] as num).toDouble();
+        final date = log['log_date'] as String? ?? '';
+        
+        // Calculate difference with previous entry (which is i+1 because sorted descending)
+        double diff = 0;
+        bool hasDiff = false;
+        if (i < _weightLogs.length - 1) {
+          final prevWeight = (_weightLogs[i+1]['weight_kg'] as num).toDouble();
+          diff = weight - prevWeight;
+          hasDiff = true;
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [BoxShadow(color: Color(0x05112D4E), blurRadius: 10, offset: Offset(0, 2))],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.calendar_month, color: Color(0xFF5A8DA0), size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _formatDate(date),
+                        style: GoogleFonts.manrope(
+                          color: const Color(0xFF112D4E),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (hasDiff && diff != 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            diff > 0 ? '+${diff.toStringAsFixed(1)} kg dari sblmnya' : '${diff.toStringAsFixed(1)} kg dari sblmnya',
+                            style: GoogleFonts.manrope(
+                              color: diff > 0 ? Colors.redAccent : const Color(0xFF2E7D32),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+              Text(
+                '${weight.toStringAsFixed(1)} kg',
+                style: GoogleFonts.manrope(
+                  color: const Color(0xFF3F72AF),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 }
