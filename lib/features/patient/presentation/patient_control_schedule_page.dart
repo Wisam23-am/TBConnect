@@ -12,10 +12,12 @@ class PatientControlSchedulePage extends StatefulWidget {
   const PatientControlSchedulePage({super.key});
 
   @override
-  State<PatientControlSchedulePage> createState() => _PatientControlSchedulePageState();
+  State<PatientControlSchedulePage> createState() =>
+      _PatientControlSchedulePageState();
 }
 
-class _PatientControlSchedulePageState extends State<PatientControlSchedulePage> {
+class _PatientControlSchedulePageState
+    extends State<PatientControlSchedulePage> {
   final _authService = AuthService();
 
   PatientSession? _session;
@@ -37,14 +39,15 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
 
     try {
       final session = await _authService.getPatientSession();
-      
+
       _session = session ??
           PatientSession(
             patientId: 'guest',
             fullName: 'Pasien Uji Coba',
             doctorId: 'guest-doctor',
             qrCode: 'GUEST-1234',
-            treatmentStartDate: DateTime.now().subtract(const Duration(days: 45)),
+            treatmentStartDate:
+                DateTime.now().subtract(const Duration(days: 45)),
             initialWeightKg: 60.0,
           );
 
@@ -78,7 +81,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
 
   List<Map<String, dynamic>> _buildGuestVisits(DateTime startDate) {
     return List.generate(6, (i) {
-      final visitDate = DateTime(startDate.year, startDate.month + (i + 1), startDate.day);
+      final visitDate =
+          DateTime(startDate.year, startDate.month + (i + 1), startDate.day);
       String status = 'upcoming';
       if (i == 0) {
         status = 'done'; // Bulan 1 selesai
@@ -108,8 +112,18 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
 
   String _formatDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agt',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
     ];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
@@ -168,7 +182,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8)),
+                        icon: const Icon(Icons.close_rounded,
+                            color: Color(0xFF94A3B8)),
                       ),
                     ],
                   ),
@@ -217,20 +232,28 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
                         border: Border.all(color: const Color(0xFFCBD5E1)),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today_rounded, color: Color(0xFF112D4E), size: 20),
+                          const Icon(Icons.calendar_today_rounded,
+                              color: Color(0xFF112D4E), size: 20),
                           const SizedBox(width: 12),
                           Text(
-                            selectedDate == null ? 'Pilih Tanggal Baru' : _formatDate(selectedDate!),
+                            selectedDate == null
+                                ? 'Pilih Tanggal Baru'
+                                : _formatDate(selectedDate!),
                             style: GoogleFonts.manrope(
-                              color: selectedDate == null ? const Color(0xFF94A3B8) : const Color(0xFF001833),
-                              fontWeight: selectedDate == null ? FontWeight.w400 : FontWeight.w600,
+                              color: selectedDate == null
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF001833),
+                              fontWeight: selectedDate == null
+                                  ? FontWeight.w400
+                                  : FontWeight.w600,
                             ),
                           ),
                         ],
@@ -253,15 +276,18 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                     maxLines: 3,
                     style: GoogleFonts.manrope(color: const Color(0xFF001833)),
                     decoration: InputDecoration(
-                      hintText: 'Tulis alasan Anda (misal: ada keperluan dinas luar kota)...',
-                      hintStyle: GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
+                      hintText:
+                          'Tulis alasan Anda (misal: ada keperluan dinas luar kota)...',
+                      hintStyle:
+                          GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF112D4E), width: 1.5),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF112D4E), width: 1.5),
                       ),
                     ),
                   ),
@@ -273,13 +299,15 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                       onPressed: isSubmitting
                           ? null
                           : () async {
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              final scaffoldMessenger =
+                                  ScaffoldMessenger.of(context);
                               final navigator = Navigator.of(context);
 
                               if (selectedDate == null) {
                                 scaffoldMessenger.showSnackBar(
                                   const SnackBar(
-                                    content: Text('Silakan pilih tanggal baru terlebih dahulu.'),
+                                    content: Text(
+                                        'Silakan pilih tanggal baru terlebih dahulu.'),
                                     backgroundColor: Colors.orangeAccent,
                                   ),
                                 );
@@ -288,7 +316,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                               if (reasonController.text.trim().isEmpty) {
                                 scaffoldMessenger.showSnackBar(
                                   const SnackBar(
-                                    content: Text('Silakan isi alasan pengajuan perpindahan jadwal.'),
+                                    content: Text(
+                                        'Silakan isi alasan pengajuan perpindahan jadwal.'),
                                     backgroundColor: Colors.orangeAccent,
                                   ),
                                 );
@@ -299,14 +328,20 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
 
                               try {
                                 // Simulasi pengiriman reschedule lokal (in-memory) untuk keperluan demonstrasi
-                                await Future.delayed(const Duration(seconds: 1));
-                                final idx = _visits.indexWhere((v) => v['id'] == visit['id']);
+                                await Future.delayed(
+                                    const Duration(seconds: 1));
+                                final idx = _visits
+                                    .indexWhere((v) => v['id'] == visit['id']);
                                 if (idx != -1) {
                                   setState(() {
                                     _visits[idx]['reschedule_requested'] = true;
                                     _visits[idx]['reschedule_to_date'] =
-                                        selectedDate!.toIso8601String().split('T').first;
-                                    _visits[idx]['reschedule_reason'] = reasonController.text.trim();
+                                        selectedDate!
+                                            .toIso8601String()
+                                            .split('T')
+                                            .first;
+                                    _visits[idx]['reschedule_reason'] =
+                                        reasonController.text.trim();
                                   });
                                 }
 
@@ -316,7 +351,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                                     SnackBar(
                                       content: Text(
                                         '✅ Pengajuan berhasil dikirim',
-                                        style: GoogleFonts.manrope(color: Colors.white),
+                                        style: GoogleFonts.manrope(
+                                            color: Colors.white),
                                       ),
                                       backgroundColor: const Color(0xFF2E7D32),
                                       behavior: SnackBarBehavior.floating,
@@ -330,7 +366,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                                 setSheetState(() => isSubmitting = false);
                                 scaffoldMessenger.showSnackBar(
                                   SnackBar(
-                                    content: Text('Gagal mengirim pengajuan: $e'),
+                                    content:
+                                        Text('Gagal mengirim pengajuan: $e'),
                                     backgroundColor: Colors.redAccent,
                                   ),
                                 );
@@ -348,11 +385,13 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2),
                             )
                           : Text(
                               'Kirim Pengajuan',
-                              style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w700),
+                              style: GoogleFonts.manrope(
+                                  fontSize: 15, fontWeight: FontWeight.w700),
                             ),
                     ),
                   ),
@@ -385,7 +424,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFFC4C6CF)),
+                const Icon(Icons.cloud_off_rounded,
+                    size: 64, color: Color(0xFFC4C6CF)),
                 const SizedBox(height: 16),
                 Text(
                   'Gagal memuat data',
@@ -399,7 +439,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                 Text(
                   _error!,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF5A8DA0)),
+                  style: GoogleFonts.manrope(
+                      fontSize: 13, color: const Color(0xFF5A8DA0)),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
@@ -422,7 +463,43 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.calendar_month_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Jadwal Kontrol',
+              style: GoogleFonts.manrope(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.22,
+              ),
+            ),
+          ],
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF112D4E), Color(0xFF3F72AF)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+      ),
       body: SafeArea(
+        top: false,
         child: RefreshIndicator(
           onRefresh: _loadData,
           color: const Color(0xFF112D4E),
@@ -442,25 +519,28 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                     ),
                   ),
                 _buildHeader(),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _visits.length,
                   itemBuilder: (ctx, index) {
                     final visit = _visits[index];
-                    final visitNum = visit['visit_number'] as int? ?? (index + 1);
+                    final visitNum =
+                        visit['visit_number'] as int? ?? (index + 1);
 
                     // Menentukan status visual
                     String visualStatus = 'locked';
                     if (visit['status']?.toString().toLowerCase() == 'done' ||
-                        visit['status']?.toString().toLowerCase() == 'completed') {
+                        visit['status']?.toString().toLowerCase() ==
+                            'completed') {
                       visualStatus = 'done';
                     } else if (visitNum == activeVisitNumber) {
                       visualStatus = 'active';
                     }
 
-                    return _buildTimelineItem(visit, visualStatus, index == _visits.length - 1);
+                    return _buildTimelineItem(
+                        visit, visualStatus, index == _visits.length - 1);
                   },
                 ),
               ],
@@ -472,32 +552,18 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
   }
 
   Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Jadwal Kontrol',
-          style: GoogleFonts.manrope(
-            color: const Color(0xFF001833),
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Pantau jadwal kontrol bulanan Anda untuk memastikan pemulihan yang optimal.',
-          style: GoogleFonts.manrope(
-            color: const Color(0xFF64748B),
-            fontSize: 13,
-            height: 1.3,
-          ),
-        ),
-      ],
+    return Text(
+      'Pantau jadwal kontrol bulanan Anda untuk memastikan pemulihan yang optimal.',
+      style: GoogleFonts.manrope(
+        color: const Color(0xFF64748B),
+        fontSize: 13,
+        height: 1.3,
+      ),
     );
   }
 
-  Widget _buildTimelineItem(Map<String, dynamic> visit, String visualStatus, bool isLast) {
+  Widget _buildTimelineItem(
+      Map<String, dynamic> visit, String visualStatus, bool isLast) {
     final visitNum = visit['visit_number'] as int? ?? 1;
 
     Widget leftTimeline;
@@ -516,7 +582,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
               border: Border.all(color: const Color(0xFF112D4E), width: 2),
             ),
             child: const Center(
-              child: Icon(Icons.done_rounded, color: Color(0xFF112D4E), size: 16),
+              child:
+                  Icon(Icons.done_rounded, color: Color(0xFF112D4E), size: 16),
             ),
           ),
           if (!isLast)
@@ -554,7 +621,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE2F8E8),
                     borderRadius: BorderRadius.circular(100),
@@ -573,7 +641,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(Icons.calendar_today_rounded, size: 14, color: Color(0xFF94A3B8)),
+                const Icon(Icons.calendar_today_rounded,
+                    size: 14, color: Color(0xFF94A3B8)),
                 const SizedBox(width: 8),
                 Text(
                   'Selesai pada ${_formatDateString(visit['scheduled_date'])}',
@@ -588,7 +657,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF94A3B8)),
+                const Icon(Icons.location_on_outlined,
+                    size: 16, color: Color(0xFF94A3B8)),
                 const SizedBox(width: 6),
                 Text(
                   visit['location'] ?? 'Puskesmas',
@@ -674,13 +744,16 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: const Color(0xFFE5F0FF),
                               borderRadius: BorderRadius.circular(100),
                             ),
                             child: Text(
-                              rescheduleRequested ? 'Pindah Diajukan' : 'Mendatang',
+                              rescheduleRequested
+                                  ? 'Pindah Diajukan'
+                                  : 'Mendatang',
                               style: GoogleFonts.manrope(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -693,7 +766,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          const Icon(Icons.calendar_today_rounded, size: 14, color: Color(0xFF112D4E)),
+                          const Icon(Icons.calendar_today_rounded,
+                              size: 14, color: Color(0xFF112D4E)),
                           const SizedBox(width: 8),
                           Text(
                             _formatDateString(visit['scheduled_date']),
@@ -708,7 +782,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF64748B)),
+                          const Icon(Icons.location_on_outlined,
+                              size: 16, color: Color(0xFF64748B)),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -724,7 +799,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                         ],
                       ),
                       const SizedBox(height: 16),
-                      const Divider(height: 1, thickness: 1, color: Color(0xFFEDF2F7)),
+                      const Divider(
+                          height: 1, thickness: 1, color: Color(0xFFEDF2F7)),
                       const SizedBox(height: 16),
 
                       // Cek jika sudah diajukan reschedule
@@ -738,7 +814,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.info_outline_rounded, color: Colors.orangeAccent, size: 18),
+                              const Icon(Icons.info_outline_rounded,
+                                  color: Colors.orangeAccent, size: 18),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
@@ -759,7 +836,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             onPressed: () => _showRescheduleSheet(visit),
-                            icon: const Icon(Icons.calendar_month_rounded, size: 16),
+                            icon: const Icon(Icons.calendar_month_rounded,
+                                size: 16),
                             label: Text(
                               'Ajukan Perpindahan Jadwal Kontrol',
                               style: GoogleFonts.manrope(
@@ -769,7 +847,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                             ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF112D4E),
-                              side: const BorderSide(color: Color(0xFF112D4E), width: 1.2),
+                              side: const BorderSide(
+                                  color: Color(0xFF112D4E), width: 1.2),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -847,7 +926,8 @@ class _PatientControlSchedulePageState extends State<PatientControlSchedulePage>
                 ),
               ],
             ),
-            const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8), size: 20),
+            const Icon(Icons.lock_outline_rounded,
+                color: Color(0xFF94A3B8), size: 20),
           ],
         ),
       );

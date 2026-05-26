@@ -1,0 +1,75 @@
+﻿Analyzing TBConnect...                                          
+
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\doctor_login_screen.dart:110:37 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\doctor_login_screen.dart:149:37 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\portal_role_screen.dart:20:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\portal_role_screen.dart:40:23 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:265:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:287:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:351:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:352:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:388:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:430:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:432:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:448:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_feedback_page.dart:134:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_feedback_page.dart:186:65 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_feedback_page.dart:189:67 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\doctor\presentation\doctor_feedback_page.dart:213:33 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\features\doctor\presentation\home_page.dart:500:25 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:193:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:215:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:251:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:257:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:451:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:454:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:457:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:476:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:510:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:684:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:797:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:805:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:817:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:844:96 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_qr_page.dart:82:73 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_qr_page.dart:208:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_qr_page.dart:307:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_home_page.dart:628:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_home_page.dart:660:43 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_home_page.dart:1113:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_home_page.dart:1125:18 - prefer_const_constructors
+warning - Unused import: 'package:supabase_flutter/supabase_flutter.dart' - lib\features\patient\presentation\patient_notification_page.dart:4:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_notification_page.dart:542:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_notification_page.dart:593:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_notification_page.dart:635:34 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\patient\presentation\patient_notification_page.dart:823:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\patient\presentation\patient_notification_page.dart:838:40 - use_build_context_synchronously
+   info - The constant name 'sangat_buruk' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:12:3 - constant_identifier_names
+   info - The constant name 'kurang_baik' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:13:3 - constant_identifier_names
+   info - The constant name 'cukup_baik' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:14:3 - constant_identifier_names
+   info - The constant name 'sangat_baik' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:15:3 - constant_identifier_names
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_symptoms_page.dart:239:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_symptoms_page.dart:248:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_symptoms_page.dart:282:13 - prefer_const_constructors
+warning - Unused import: 'patient_shell.dart' - lib\features\patient\presentation\patient_weight_input_page.dart:5:8 - unused_import
+warning - The value of the field '_error' isn't used - lib\features\patient\presentation\patient_weight_input_page.dart:35:11 - unused_field
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:143:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:178:9 - curly_braces_in_flow_control_structures
+   info - Unnecessary 'const' keyword - lib\features\patient\presentation\patient_weight_input_page.dart:256:43 - unnecessary_const
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:295:39 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:300:39 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_input_page.dart:316:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_input_page.dart:319:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_input_page.dart:410:57 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\features\patient\presentation\patient_weight_progress_page.dart:67:9 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_progress_page.dart:249:47 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\services\patient_service.dart:128:7 - avoid_print
+
+flutter : 64 issues found. (ran in 3.9s)
+At line:1 char:1
++ flutter analyze 2>&1 | Out-File -FilePath .\analyze3.txt -Encoding ut ...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (64 issues found. (ran in 3.9s):St 
+   ring) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

@@ -36,7 +36,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
         return;
       }
 
-      final dbProfile = await _patientService.getPatientProfile(session.patientId);
+      final dbProfile =
+          await _patientService.getPatientProfile(session.patientId);
 
       if (mounted) {
         setState(() {
@@ -73,8 +74,18 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       dt = DateTime.tryParse(dtStr.toString()) ?? DateTime.now();
     }
     const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
@@ -114,7 +125,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
     }
 
     final doctor = db['doctors'] ?? {};
-    final treatmentStartDate = DateTime.tryParse(db['treatment_start_date'] ?? '') ?? DateTime.now();
+    final treatmentStartDate =
+        DateTime.tryParse(db['treatment_start_date'] ?? '') ?? DateTime.now();
     final treatmentPhase = _calculateTreatmentPhase(treatmentStartDate);
 
     return Scaffold(
@@ -130,9 +142,10 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
             children: [
               // ── HERO SECTION ──
               _buildHeroSection(db['full_name'] ?? 'Pasien', db['nik'] ?? '-'),
-              
+
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -169,12 +182,15 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                         _DetailRow(
                           icon: Icons.cake_rounded,
                           label: 'Tempat, Tanggal Lahir',
-                          value: '${db['birth_place'] ?? '-'}, ${_formatDate(db['birth_date'])}',
+                          value:
+                              '${db['birth_place'] ?? '-'}, ${_formatDate(db['birth_date'])}',
                         ),
                         _DetailRow(
                           icon: Icons.male_rounded,
                           label: 'Jenis Kelamin',
-                          value: db['gender'] == 'L' ? 'Laki-laki' : (db['gender'] == 'P' ? 'Perempuan' : '-'),
+                          value: db['gender'] == 'L'
+                              ? 'Laki-laki'
+                              : (db['gender'] == 'P' ? 'Perempuan' : '-'),
                         ),
                         _DetailRow(
                           icon: Icons.phone_android_rounded,
@@ -204,7 +220,9 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                         _DetailRow(
                           icon: Icons.business_rounded,
                           label: 'Rumah Sakit / Klinik',
-                          value: doctor['hospital_name'] ?? db['faskes_name'] ?? '-',
+                          value: doctor['hospital_name'] ??
+                              db['faskes_name'] ??
+                              '-',
                           showDivider: false,
                         ),
                       ],
@@ -219,7 +237,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                           await _authService.logoutPatient();
                           if (mounted) _redirectToLogin();
                         },
-                        icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                        icon: const Icon(Icons.logout_rounded,
+                            color: Colors.redAccent),
                         label: Text(
                           'Keluar Akun',
                           style: GoogleFonts.manrope(
@@ -374,7 +393,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFFC4C6CF)),
+            const Icon(Icons.cloud_off_rounded,
+                size: 64, color: Color(0xFFC4C6CF)),
             const SizedBox(height: 16),
             Text(
               'Gagal memuat profil',

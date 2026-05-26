@@ -790,28 +790,39 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: Text(
-          'Notifikasi',
-          style: GoogleFonts.manrope(
-            color: const Color(0xFF112D4E),
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        // Add a close button on the top-left to dismiss this page
-        iconTheme: const IconThemeData(color: Color(0xFF112D4E)),
+        automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFF112D4E)),
+          icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.notifications_active_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Notifikasi',
+              style: GoogleFonts.manrope(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.22,
+              ),
+            ),
+          ],
         ),
         actions: [
           // Tombol aktifkan notifikasi sistem Android
           IconButton(
             icon: const Icon(Icons.notifications_active_outlined,
-                color: Color(0xFF112D4E)),
+                color: Colors.white),
             tooltip: 'Aktifkan pengingat harian',
             onPressed: () async {
               final granted =
@@ -850,9 +861,14 @@ class _PatientNotificationPageState extends State<PatientNotificationPage> {
             },
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFEDEEEF), height: 1),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF112D4E), Color(0xFF3F72AF)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
         ),
       ),
       body: _isLoading

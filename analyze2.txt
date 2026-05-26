@@ -1,0 +1,93 @@
+﻿Analyzing TBConnect...                                          
+
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\doctor_login_screen.dart:110:37 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\doctor_login_screen.dart:149:37 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\portal_role_screen.dart:20:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\portal_role_screen.dart:40:23 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:265:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:287:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:351:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:352:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:388:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:430:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:432:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:448:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_feedback_page.dart:134:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_feedback_page.dart:186:65 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_feedback_page.dart:189:67 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\doctor\presentation\doctor_feedback_page.dart:213:33 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\features\doctor\presentation\home_page.dart:500:25 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:193:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:215:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:251:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:257:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:451:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:454:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:457:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:476:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:510:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:684:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:797:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:805:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:817:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:844:96 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_qr_page.dart:82:73 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_qr_page.dart:208:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_qr_page.dart:307:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_home_page.dart:628:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_home_page.dart:660:43 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_home_page.dart:1113:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_home_page.dart:1125:18 - prefer_const_constructors
+warning - Unused import: 'package:supabase_flutter/supabase_flutter.dart' - lib\features\patient\presentation\patient_notification_page.dart:4:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_notification_page.dart:542:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_notification_page.dart:593:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_notification_page.dart:635:34 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\patient\presentation\patient_notification_page.dart:823:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\patient\presentation\patient_notification_page.dart:838:40 - use_build_context_synchronously
+   info - The constant name 'sangat_buruk' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:12:3 - constant_identifier_names
+   info - The constant name 'kurang_baik' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:13:3 - constant_identifier_names
+   info - The constant name 'cukup_baik' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:14:3 - constant_identifier_names
+   info - The constant name 'sangat_baik' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:15:3 - constant_identifier_names
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_symptoms_page.dart:239:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_symptoms_page.dart:248:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_symptoms_page.dart:282:13 - prefer_const_constructors
+warning - Unused import: 'patient_shell.dart' - lib\features\patient\presentation\patient_weight_input_page.dart:5:8 - unused_import
+warning - The value of the field '_error' isn't used - lib\features\patient\presentation\patient_weight_input_page.dart:35:11 - unused_field
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:143:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:178:9 - curly_braces_in_flow_control_structures
+   info - Unnecessary 'const' keyword - lib\features\patient\presentation\patient_weight_input_page.dart:256:43 - unnecessary_const
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:295:39 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:300:39 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_input_page.dart:316:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_input_page.dart:319:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_input_page.dart:410:57 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\features\patient\presentation\patient_weight_progress_page.dart:67:9 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_progress_page.dart:249:47 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\services\patient_service.dart:128:7 - avoid_print
+  error - Target of URI doesn't exist: '../../../services/auth_service.dart' - patient_home_page_head.dart:6:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: '../../../services/notification_realtime_service.dart' - patient_home_page_head.dart:7:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: '../../../services/patient_service.dart' - patient_home_page_head.dart:8:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: '../../auth/presentation/portal_role_screen.dart' - patient_home_page_head.dart:9:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'patient_weight_input_page.dart' - patient_home_page_head.dart:10:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'patient_notification_page.dart' - patient_home_page_head.dart:11:8 - uri_does_not_exist
+  error - The method 'AuthService' isn't defined for the type '_PatientHomePageState' - patient_home_page_head.dart:60:24 - undefined_method
+  error - The method 'PatientDataService' isn't defined for the type '_PatientHomePageState' - patient_home_page_head.dart:61:27 - undefined_method
+  error - Undefined name 'NotificationRealtimeService' - patient_home_page_head.dart:63:28 - undefined_identifier
+  error - Undefined class 'PatientSession' - patient_home_page_head.dart:66:3 - undefined_class
+  error - The name 'PortalRoleScreen' isn't a class - patient_home_page_head.dart:140:55 - creation_with_non_type
+  error - The method 'PatientSession' isn't defined for the type '_PatientHomePageState' - patient_home_page_head.dart:149:24 - undefined_method
+  error - The name 'PatientWeightInputPage' isn't a class - patient_home_page_head.dart:422:35 - creation_with_non_type
+  error - The name 'PortalRoleScreen' isn't a class - patient_home_page_head.dart:514:61 - creation_with_non_type
+  error - The name 'NotificationSnapshot' isn't a type, so it can't be used as a type argument - patient_home_page_head.dart:634:23 - non_type_as_type_argument
+  error - The name 'PatientNotificationPage' isn't a class - patient_home_page_head.dart:650:55 - creation_with_non_type
+   info - Use 'const' with the constructor to improve performance - patient_home_page_head.dart:1092:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - patient_home_page_head.dart:1104:18 - prefer_const_constructors
+
+flutter : 82 issues found. (ran in 4.1s)
+At line:1 char:1
++ flutter analyze 2>&1 | Out-File -FilePath .\analyze2.txt -Encoding ut ...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (82 issues found. (ran in 4.1s):St 
+   ring) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

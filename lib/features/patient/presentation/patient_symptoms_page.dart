@@ -205,17 +205,39 @@ class _PatientSymptomsPageState extends State<PatientSymptomsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF3F5F9),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(
-          'Monitoring Gejala',
-          style: GoogleFonts.manrope(
-            color: const Color(0xFF001833),
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.22,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.monitor_heart_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Monitoring Gejala',
+              style: GoogleFonts.manrope(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.22,
+              ),
+            ),
+          ],
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF112D4E), Color(0xFF3F72AF)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
         ),
       ),
@@ -394,7 +416,8 @@ class _MoodCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFF2A609C) : const Color(0xFFE1E3E4),
+            color:
+                isSelected ? const Color(0xFF2A609C) : const Color(0xFFE1E3E4),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -472,8 +495,9 @@ class _SymptomPillGrid extends StatelessWidget {
               color: isSelected ? const Color(0xFF2A609C) : Colors.white,
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
-                color:
-                    isSelected ? const Color(0xFF2A609C) : const Color(0xFFE1E3E4),
+                color: isSelected
+                    ? const Color(0xFF2A609C)
+                    : const Color(0xFFE1E3E4),
               ),
             ),
             child: Text(
@@ -585,9 +609,8 @@ class _EmergencySymptomCard extends StatelessWidget {
           color: isSelected ? const Color(0xFFEF5350) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFFC62828)
-                : const Color(0xFFE1E3E4),
+            color:
+                isSelected ? const Color(0xFFC62828) : const Color(0xFFE1E3E4),
           ),
         ),
         child: Column(
