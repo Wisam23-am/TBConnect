@@ -146,6 +146,12 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                           label: 'Tanggal Mulai Pengobatan',
                           value: _formatDate(db['treatment_start_date']),
                         ),
+                        if (db['treatment_duration_months'] != null)
+                          _DetailRow(
+                            icon: Icons.timer_outlined,
+                            label: 'Lama Pengobatan',
+                            value: '${db['treatment_duration_months']} Bulan',
+                          ),
                         _DetailRow(
                           icon: Icons.timeline_rounded,
                           label: 'Fase Pengobatan',
@@ -171,10 +177,16 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                           label: 'Tempat, Tanggal Lahir',
                           value: '${db['birth_place'] ?? '-'}, ${_formatDate(db['birth_date'])}',
                         ),
+                        if (db['age'] != null)
+                          _DetailRow(
+                            icon: Icons.calendar_month_rounded,
+                            label: 'Umur',
+                            value: '${db['age']} Tahun',
+                          ),
                         _DetailRow(
                           icon: Icons.male_rounded,
                           label: 'Jenis Kelamin',
-                          value: db['gender'] == 'L' ? 'Laki-laki' : (db['gender'] == 'P' ? 'Perempuan' : '-'),
+                          value: db['gender'] == 'male' ? 'Laki-laki' : (db['gender'] == 'female' ? 'Perempuan' : '-'),
                         ),
                         _DetailRow(
                           icon: Icons.phone_android_rounded,
