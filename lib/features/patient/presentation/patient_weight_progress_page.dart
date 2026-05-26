@@ -8,7 +8,8 @@ class PatientWeightProgressPage extends StatefulWidget {
   const PatientWeightProgressPage({super.key});
 
   @override
-  State<PatientWeightProgressPage> createState() => _PatientWeightProgressPageState();
+  State<PatientWeightProgressPage> createState() =>
+      _PatientWeightProgressPageState();
 }
 
 class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
@@ -41,10 +42,36 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
         limit: 20,
       );
 
+      try {
+        final profile =
+            await _patientService.getPatientProfile(session.patientId);
+        final initialWeight =
+            (profile['initial_weight_kg'] as num?)?.toDouble();
+        final startDate = profile['treatment_start_date'] as String?;
+
+        if (initialWeight != null && startDate != null) {
+          // Check if there's already a log for this exact date to prevent duplicates
+          final exists = logs.any((l) => l['log_date'] == startDate);
+          if (!exists) {
+            logs.add({
+              'weight_kg': initialWeight,
+              'log_date': startDate,
+              'is_initial': true,
+            });
+            // Re-sort descending
+            logs.sort((a, b) =>
+                (b['log_date'] as String).compareTo(a['log_date'] as String));
+          }
+        }
+      } catch (e) {
+        print('Gagal mengambil initial weight: $e');
+      }
+
       if (logs.isNotEmpty) {
         setState(() {
           _weightLogs = logs;
-          _currentWeek = _calculateWeekLabel(DateTime.tryParse(logs.first['log_date'] as String? ?? ''));
+          _currentWeek = _calculateWeekLabel(
+              DateTime.tryParse(logs.first['log_date'] as String? ?? ''));
         });
       } else {
         setState(() {
@@ -81,7 +108,20 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des'
+      ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (_) {
       return dateStr;
@@ -93,8 +133,13 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
       context,
       MaterialPageRoute(
         builder: (ctx) => PatientWeightInputPage(
-          initialWeight: _weightLogs.isNotEmpty ? (_weightLogs.first['weight_kg'] as num?)?.toDouble() : null,
-          previousWeightDate: _weightLogs.isNotEmpty ? DateTime.tryParse(_weightLogs.first['log_date'] as String? ?? '') : null,
+          initialWeight: _weightLogs.isNotEmpty
+              ? (_weightLogs.first['weight_kg'] as num?)?.toDouble()
+              : null,
+          previousWeightDate: _weightLogs.isNotEmpty
+              ? DateTime.tryParse(
+                  _weightLogs.first['log_date'] as String? ?? '')
+              : null,
         ),
       ),
     );
@@ -102,16 +147,18 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
     if (result != null && mounted) {
       _loadWeightHistory();
     } else {
-      _loadWeightHistory(); 
+      _loadWeightHistory();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F5F9), // Lighter background for modern look
+      backgroundColor:
+          const Color(0xFFF3F5F9), // Lighter background for modern look
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF112D4E)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF112D4E)))
           : _error != null
               ? _buildErrorState()
               : RefreshIndicator(
@@ -157,7 +204,9 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
         children: [
           Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
           const SizedBox(height: 16),
-          Text(_error!, textAlign: TextAlign.center, style: GoogleFonts.manrope(fontSize: 14)),
+          Text(_error!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(fontSize: 14)),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _loadWeightHistory,
@@ -200,7 +249,8 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
                       color: Colors.white.withOpacity(0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.monitor_weight_outlined, color: Colors.white, size: 32),
+                    child: const Icon(Icons.monitor_weight_outlined,
+                        color: Colors.white, size: 32),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -238,7 +288,8 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: Color(0x0A112D4E), blurRadius: 20, offset: Offset(0, 4)),
+          BoxShadow(
+              color: Color(0x0A112D4E), blurRadius: 20, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -277,7 +328,8 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
                   color: const Color(0xFFE5F0FF),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.add_chart, color: Color(0xFF3F72AF), size: 30),
+                child: const Icon(Icons.add_chart,
+                    color: Color(0xFF3F72AF), size: 30),
               ),
             ],
           ),
@@ -290,7 +342,8 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
                 backgroundColor: const Color(0xFF112D4E),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
               child: Row(
@@ -300,7 +353,8 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
                   const SizedBox(width: 8),
                   Text(
                     'Catat Berat Badan',
-                    style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.manrope(
+                        fontSize: 15, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -327,7 +381,10 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
             const SizedBox(height: 16),
             Text(
               'Belum ada riwayat berat badan',
-              style: GoogleFonts.manrope(color: const Color(0xFF5A8DA0), fontSize: 14, fontWeight: FontWeight.w600),
+              style: GoogleFonts.manrope(
+                  color: const Color(0xFF5A8DA0),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -339,12 +396,14 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
         final log = _weightLogs[i];
         final weight = (log['weight_kg'] as num).toDouble();
         final date = log['log_date'] as String? ?? '';
-        
+        final isInitial = log['is_initial'] == true;
+
         // Calculate difference with previous entry (which is i+1 because sorted descending)
         double diff = 0;
         bool hasDiff = false;
         if (i < _weightLogs.length - 1) {
-          final prevWeight = (_weightLogs[i+1]['weight_kg'] as num).toDouble();
+          final prevWeight =
+              (_weightLogs[i + 1]['weight_kg'] as num).toDouble();
           diff = weight - prevWeight;
           hasDiff = true;
         }
@@ -353,52 +412,91 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isInitial ? const Color(0xFFF9FAFB) : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: const [BoxShadow(color: Color(0x05112D4E), blurRadius: 10, offset: Offset(0, 2))],
+            border:
+                isInitial ? Border.all(color: const Color(0xFFE1E3E4)) : null,
+            boxShadow: isInitial
+                ? null
+                : const [
+                    BoxShadow(
+                        color: Color(0x05112D4E),
+                        blurRadius: 10,
+                        offset: Offset(0, 2))
+                  ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F5F9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.calendar_month, color: Color(0xFF5A8DA0), size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _formatDate(date),
-                        style: GoogleFonts.manrope(
-                          color: const Color(0xFF112D4E),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isInitial
+                            ? const Color(0xFFE1E3E4)
+                            : const Color(0xFFF3F5F9),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      if (hasDiff && diff != 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            diff > 0 ? '+${diff.toStringAsFixed(1)} kg dari sblmnya' : '${diff.toStringAsFixed(1)} kg dari sblmnya',
+                      child: Icon(
+                          isInitial ? Icons.flag_rounded : Icons.calendar_month,
+                          color: isInitial
+                              ? const Color(0xFF43474E)
+                              : const Color(0xFF5A8DA0),
+                          size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _formatDate(date),
                             style: GoogleFonts.manrope(
-                              color: diff > 0 ? Colors.redAccent : const Color(0xFF2E7D32),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF112D4E),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                ],
+                          if (isInitial)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Berat Awal',
+                                style: GoogleFonts.manrope(
+                                  color: const Color(0xFF5A8DA0),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )
+                          else if (hasDiff && diff != 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                diff > 0
+                                    ? '+${diff.toStringAsFixed(1)} kg dari sblmnya'
+                                    : '${diff.toStringAsFixed(1)} kg dari sblmnya',
+                                style: GoogleFonts.manrope(
+                                  color: diff > 0
+                                      ? Colors.redAccent
+                                      : const Color(0xFF2E7D32),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '${weight.toStringAsFixed(1)} kg',
                 style: GoogleFonts.manrope(
