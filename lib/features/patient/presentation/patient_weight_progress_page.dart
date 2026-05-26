@@ -298,28 +298,30 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'JADWAL TIMBANG',
-                    style: GoogleFonts.manrope(
-                      color: const Color(0xFF5A8DA0),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.0,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'JADWAL TIMBANG',
+                      style: GoogleFonts.manrope(
+                        color: const Color(0xFF5A8DA0),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.0,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _currentWeek ?? 'Minggu Ini',
-                    style: GoogleFonts.manrope(
-                      color: const Color(0xFF112D4E),
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                    const SizedBox(height: 8),
+                    Text(
+                      _currentWeek ?? 'Minggu Ini',
+                      style: GoogleFonts.manrope(
+                        color: const Color(0xFF112D4E),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Container(
                 width: 60,
