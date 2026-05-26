@@ -22,8 +22,7 @@ class PatientBottomNavBar extends StatelessWidget {
     required this.onTap,
     this.items = const [
       PatientBottomNavItem(icon: Icons.home_rounded, label: 'Beranda'),
-      PatientBottomNavItem(
-          icon: Icons.monitor_heart_outlined, label: 'Gejala'),
+      PatientBottomNavItem(icon: Icons.monitor_heart_outlined, label: 'Gejala'),
       PatientBottomNavItem(icon: Icons.monitor_weight_rounded, label: 'Berat'),
       PatientBottomNavItem(icon: Icons.calendar_month_rounded, label: 'Jadwal'),
       PatientBottomNavItem(icon: Icons.person_rounded, label: 'Profil'),
@@ -34,38 +33,73 @@ class PatientBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFFDBE2EF), width: 1)),
+        color: Color(0xFF112D4E),
+        border: Border(top: BorderSide(color: Color(0x33FFFFFF), width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x0A112D4E),
+            color: Color(0x33112D4E),
             blurRadius: 20,
             offset: Offset(0, -4),
           ),
         ],
       ),
-      child: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        currentIndex: currentIndex,
-        selectedItemColor: const Color(0xFF112D4E),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedLabelStyle: GoogleFonts.manrope(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          splashFactory: NoSplash.splashFactory,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          hoverColor: Colors.transparent,
         ),
-        unselectedLabelStyle: GoogleFonts.manrope(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: currentIndex,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white.withOpacity(0.72),
+          selectedLabelStyle: GoogleFonts.manrope(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+          unselectedLabelStyle: GoogleFonts.manrope(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+          onTap: onTap,
+          items: items
+              .asMap()
+              .entries
+              .map(
+                (entry) => BottomNavigationBarItem(
+                  icon: _buildNavIcon(
+                    entry.value.icon,
+                    isSelected: false,
+                  ),
+                  activeIcon: _buildNavIcon(
+                    entry.value.icon,
+                    isSelected: true,
+                  ),
+                  label: entry.value.label,
+                ),
+              )
+              .toList(),
         ),
-        onTap: onTap,
-        items: items
-            .map(
-              (item) => BottomNavigationBarItem(
-                icon: Icon(item.icon),
-                label: item.label,
-              ),
-            )
-            .toList(),
+      ),
+    );
+  }
+
+  Widget _buildNavIcon(IconData icon, {required bool isSelected}) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.white : Colors.transparent,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        icon,
+        size: 24,
+        color:
+            isSelected ? const Color.fromARGB(255, 25, 77, 136) : Colors.white,
       ),
     );
   }
