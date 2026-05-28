@@ -153,11 +153,16 @@ class PatientDataService {
   Future<List<Map<String, dynamic>>> getClinicVisits({
     required String patientId,
   }) async {
-    final result = await _supabase.rpc('get_patient_clinic_visits', params: {
-      'p_patient_id': patientId,
-    });
-    final list = List<dynamic>.from(result as List? ?? []);
-    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    try {
+      final result = await _supabase.rpc('get_upcoming_visits', params: {
+        'p_patient_id': patientId,
+      });
+      final list = List<dynamic>.from(result as List? ?? []);
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      print('Failed to get clinic visits: $e');
+      return [];
+    }
   }
 
   // ----------------------------------------------------------

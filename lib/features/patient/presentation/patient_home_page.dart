@@ -1,56 +1,22 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/auth_service.dart';
 import '../../../services/notification_realtime_service.dart';
 import '../../../services/patient_service.dart';
 import '../../auth/presentation/portal_role_screen.dart';
-import 'patient_weight_input_page.dart';
+import 'patient_control_schedule_page.dart';
 import 'patient_notification_page.dart';
+import 'patient_weight_input_page.dart';
+import 'widgets/patient_home_header.dart';
+import 'widgets/patient_schedule_header.dart';
+import 'widgets/patient_progress_card.dart';
+import 'widgets/patient_control_reminder_card.dart';
+import 'widgets/patient_weight_card.dart';
+import 'widgets/patient_medication_card.dart';
 
-// ---------------------------------------------------------------------------
-// Medication slot status  (mirrors RPC return values)
-// ---------------------------------------------------------------------------
-enum MedicationStatus {
-  completed, // 'taken'
-  active, // 'active'
-  late, // 'late'
-  missed, // 'missed'
-  locked, // 'locked'
-}
-
-// ---------------------------------------------------------------------------
-// Data model for one medication slot
-// ---------------------------------------------------------------------------
-class _MedicationSlot {
-  final String session; // 'morning' | 'afternoon' | 'evening'
-  final String label;
-  final String timeRange;
-  final List<String> medications;
-  final MedicationStatus status;
-  final DateTime? takenAt;
-  final String? lateReason;
-
-  const _MedicationSlot({
-    required this.session,
-    required this.label,
-    required this.timeRange,
-    required this.medications,
-    required this.status,
-    this.takenAt,
-    this.lateReason,
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Main screen  –  fully integrated with Supabase
-// ---------------------------------------------------------------------------
 class PatientHomePage extends StatefulWidget {
-  const PatientHomePage({super.key, this.allowGuestMode = false});
-
-  final bool allowGuestMode;
+  const PatientHomePage({super.key});
 
   @override
   State<PatientHomePage> createState() => _PatientHomePageState();
@@ -59,1435 +25,473 @@ class PatientHomePage extends StatefulWidget {
 class _PatientHomePageState extends State<PatientHomePage> {
   final _authService = AuthService();
   final _patientService = PatientDataService();
-  final _supabase = Supabase.instance.client; // untuk RPC calls
+
   final _realtimeService = NotificationRealtimeService.instance;
 
-  // ── Session & data ──
-  PatientSession? _session;
-  List<_MedicationSlot> _slots = [];
-  DateTime? _treatmentStartDate;
-  Map<String, dynamic>? _nextVisit;
   bool _isLoading = true;
-  bool _isRefreshing = false;
   String? _error;
-  final Map<String, DateTime> _guestConfirmedAt = {};
-  final Set<String> _justConfirmedSessions =
-      {}; // tracked locally for instant visual feedback
-  DateTime _selectedDate = DateTime.now();
+  PatientSession? _session;
+  Map<String, dynamic>? _dbProfile;
 
-  // Medication names per session – bisa diperkaya dari DB nanti
-  // ── Indonesian day/month names (avoid locale init issues) ──
-  static const _dayNames = [
-    'Senin',
-    'Selasa',
-    'Rabu',
-    'Kamis',
-    'Jumat',
-    'Sabtu',
-    'Minggu',
-  ];
-  static const _monthNames = [
-    'Januari',
-    'Februari',
-    'Maret',
-    'April',
-    'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember',
-  ];
+  List<MedicationSlot> _medicationSchedule = [];
 
-  static const Map<String, List<String>> _defaultMeds = {
-    'morning': [
-      'Isoniazid, Rifampicin, Pyrazinamide',
-      'Ethambutol (Total 4 Tablet)'
-    ],
-    'afternoon': [
-      'Isoniazid, Rifampicin, Pyrazinamide',
-      'Ethambutol (Total 4 Tablet)'
-    ],
-    'evening': [
-      'Isoniazid, Rifampicin, Pyrazinamide',
-      'Ethambutol (Total 4 Tablet)'
-    ],
-  };
+  // Data jadwal kontrol
+  List<Map<String, dynamic>> _controlVisits = [];
+  Map<String, dynamic>? _nextControlVisit;
 
-  // ────────────────────────────────────────────────────────────────────────
-  // Lifecycle
-  // ────────────────────────────────────────────────────────────────────────
+  // Track the currently viewed date offset from today.
+  // 0 = today, -1 = yesterday, -2 = day before yesterday.
+  int _viewedDateOffset = 0;
+
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadAllData();
   }
 
-  Future<void> _loadData() async {
-    if (!_isLoading) setState(() => _isRefreshing = true);
+  @override
+  void dispose() {
+    _realtimeService.stop();
+    super.dispose();
+  }
 
+  Future<void> _loadAllData() async {
+    setState(() => _isLoading = true);
     try {
-      // 1. Ambil session pasien dari SharedPreferences
       final session = await _authService.getPatientSession();
       if (session == null) {
-        if (!widget.allowGuestMode) {
-          _realtimeService.stop();
-          if (mounted) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const PortalRoleScreen()),
-              (route) => false,
-            );
-          }
-          return;
-        }
-
-        if (mounted) {
-          setState(() {
-            _session = PatientSession(
-              patientId: 'guest',
-              fullName: 'Pasien',
-              doctorId: '-',
-              qrCode: '-',
-              treatmentStartDate: DateTime.now(),
-              initialWeightKg: 0,
-            );
-            _slots = _buildGuestMedicationSlots(_guestConfirmedAt);
-            _treatmentStartDate = DateTime.now();
-            _nextVisit = {
-              'scheduled_date': DateTime.now()
-                  .add(const Duration(days: 5))
-                  .toIso8601String()
-                  .split('T')
-                  .first,
-              'location': 'RSUD Dr. Soetomo',
-            };
-            _isLoading = false;
-            _isRefreshing = false;
-            _error = null;
-          });
-        }
+        if (mounted) _redirectToLogin();
         return;
       }
+      _session = session;
 
-      // 2. Status obat hari ini dari RPC (SECURITY DEFINER → bypass RLS)
-      final medResult = await _patientService.getTodayMedications(
-          patientId: session.patientId, date: _selectedDate);
-      final sessions =
-          List<Map<String, dynamic>>.from(medResult['sessions'] ?? []);
+      // Initialize real-time notifications
+      await _realtimeService.start(session.patientId);
 
-      // 3. Kunjungan berikutnya
-      // Gunakan RPC: get_upcoming_visits (kalau sudah ada) atau null dulu
-      // karena query langsung ke clinic_visits diblokir RLS untuk pasien
+      // Load profile
+      _dbProfile = await _patientService.getPatientProfile(session.patientId);
+
+      // Load schedules for the selected date
+      await _fetchMedicationSchedule(session.patientId, _viewedDateOffset);
+
+      // Load control schedule visits
+      final visits = await _patientService.getClinicVisits(patientId: session.patientId);
+
       Map<String, dynamic>? nextVisit;
-      try {
-        final visits = await _supabase.rpc('get_upcoming_visits', params: {
-          'p_patient_id': session.patientId,
-        });
-        final visitsList = List<Map<String, dynamic>>.from(visits as List);
-        if (visitsList.isNotEmpty) nextVisit = visitsList.first;
-      } catch (_) {
-        // RPC mungkin belum ada di database — skip, tidak kritis
-        nextVisit = null;
+      if (visits.isNotEmpty) {
+        // Find the next visit (first one whose scheduled_date is not in the past relative to today,
+        // or the next 'active' one. Assuming sorted by visit_number)
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+
+        try {
+          nextVisit = visits.firstWhere((v) {
+            final status = v['status'] as String? ?? 'active';
+            if (status == 'done') return false;
+            final dateStr = v['scheduled_date'] as String?;
+            if (dateStr == null) return false;
+            final date = DateTime.tryParse(dateStr);
+            if (date == null) return false;
+            // Return true if date is >= today
+            return date.isAfter(today) || date.isAtSameMomentAs(today);
+          });
+        } catch (e) {
+          nextVisit = null; // No upcoming visit found
+        }
       }
 
       if (mounted) {
         setState(() {
-          _session = session;
-          _slots = sessions.map(_parseSlot).toList();
-          // treatment_start_date dan initial_weight_kg sudah dari session
-          _treatmentStartDate = session.treatmentStartDate;
-          _nextVisit = nextVisit;
+          _controlVisits = visits;
+          _nextControlVisit = nextVisit;
           _isLoading = false;
-          _isRefreshing = false;
           _error = null;
         });
       }
-
-      await _realtimeService.start(session.patientId);
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _isRefreshing = false;
           _error = 'Gagal memuat data: $e';
         });
       }
     }
   }
 
-  List<_MedicationSlot> _buildGuestMedicationSlots(
-      [Map<String, DateTime> confirmedAt = const {}]) {
-    return [
-      _buildGuestSlot(
-        session: 'morning',
-        label: 'Pagi',
-        startHour: 6,
-        endHour: 9,
-        confirmedAt: confirmedAt['morning'],
-      ),
-      _buildGuestSlot(
-        session: 'afternoon',
-        label: 'Siang',
-        startHour: 13,
-        endHour: 15,
-        confirmedAt: confirmedAt['afternoon'],
-      ),
-      _buildGuestSlot(
-        session: 'evening',
-        label: 'Malam',
-        startHour: 18,
-        endHour: 21,
-        confirmedAt: confirmedAt['evening'],
-      ),
-    ];
-  }
-
-  _MedicationSlot _buildGuestSlot({
-    required String session,
-    required String label,
-    required int startHour,
-    required int endHour,
-    DateTime? confirmedAt,
-  }) {
+  Future<void> _fetchMedicationSchedule(
+      String patientId, int daysOffset) async {
     final now = DateTime.now();
-    final status = _resolveGuestStatus(
-      now: now,
-      startHour: startHour,
-      endHour: endHour,
-      confirmedAt: confirmedAt,
-    );
+    final targetDate = now.add(Duration(days: daysOffset));
 
-    return _MedicationSlot(
-      session: session,
-      label: label,
-      timeRange:
-          '${startHour.toString().padLeft(2, '0')}:00 - ${endHour.toString().padLeft(2, '0')}:00',
-      medications: const [
-        'Isoniazid, Rifampicin, Pyrazinamide',
-        'Ethambutol (Total 4 Tablet)',
-      ],
-      status: status,
-      takenAt: confirmedAt,
+    final medResult = await _patientService.getTodayMedications(
+      patientId: patientId,
+      date: targetDate,
     );
+    
+    final logs = List<Map<String, dynamic>>.from(medResult['sessions'] ?? []);
+
+    // Map DB logs to UI slots
+    List<MedicationSlot> slots = [];
+    for (var s in logs) {
+      final session = s['session'] as String? ?? '';
+      
+      MedicationStatus status = MedicationStatus.locked;
+      final statusStr = s['status'] as String? ?? 'locked';
+      if (statusStr == 'taken') status = MedicationStatus.completed;
+      else if (statusStr == 'active') status = MedicationStatus.active;
+      else if (statusStr == 'late') status = MedicationStatus.late;
+      else if (statusStr == 'missed') status = MedicationStatus.missed;
+      else status = MedicationStatus.locked;
+
+      slots.add(MedicationSlot(
+        session: session,
+        label: s['label'] as String? ?? '',
+        timeRange: s['window'] as String? ?? '',
+        medications: ['Isoniazid, Rifampicin, Pyrazinamide', 'Ethambutol (Total 4 Tablet)'],
+        status: status,
+        takenAt: s['taken_at'] != null ? DateTime.tryParse(s['taken_at']) : null,
+        lateReason: s['late_reason'] as String?,
+      ));
+    }
+
+    setState(() {
+      _medicationSchedule = slots;
+    });
   }
 
-  MedicationStatus _resolveGuestStatus({
-    required DateTime now,
-    required int startHour,
-    required int endHour,
-    DateTime? confirmedAt,
-  }) {
-    // Jika sudah dikonfirmasi (baik tepat waktu maupun telat),
-    // tampilkan sebagai completed. Alasan keterlambatan sudah
-    // dicatat terpisah melalui dialog.
-    if (confirmedAt != null) {
-      return MedicationStatus.completed;
-    }
+  // --- Helper methods for time logic ---
 
-    if (now.hour < startHour) {
-      return MedicationStatus.locked;
+  String _getSessionLabel(String session) {
+    switch (session) {
+      case 'morning':
+        return 'Pagi';
+      case 'afternoon':
+        return 'Siang';
+      case 'evening':
+        return 'Malam';
+      default:
+        return 'Sesi Lainnya';
     }
-    if (now.hour >= startHour && now.hour < endHour) {
+  }
+
+  String _getTimeRange(String session) {
+    switch (session) {
+      case 'morning':
+        return '06:00 - 09:00';
+      case 'afternoon':
+        return '12:00 - 15:00';
+      case 'evening':
+        return '18:00 - 21:00';
+      default:
+        return 'Waktu bebas';
+    }
+  }
+
+  int _getSessionOrder(String session) {
+    switch (session) {
+      case 'morning':
+        return 1;
+      case 'afternoon':
+        return 2;
+      case 'evening':
+        return 3;
+      default:
+        return 4;
+    }
+  }
+
+  MedicationStatus _calculateStatusForToday(String session) {
+    final hour = DateTime.now().hour;
+    // Simple mock logic for today's status based on current time
+    if (session == 'morning') {
+      if (hour < 6) return MedicationStatus.locked;
+      if (hour > 10) return MedicationStatus.late; // Past tolerance
+      return MedicationStatus.active;
+    } else if (session == 'afternoon') {
+      if (hour < 12) return MedicationStatus.locked;
+      if (hour > 16) return MedicationStatus.late;
+      return MedicationStatus.active;
+    } else if (session == 'evening') {
+      if (hour < 18) return MedicationStatus.locked;
+      if (hour > 22) return MedicationStatus.late;
       return MedicationStatus.active;
     }
-    return MedicationStatus.missed;
+    return MedicationStatus.active;
   }
 
-  // ────────────────────────────────────────────────────────────────────────
-  // Helpers
-  // ────────────────────────────────────────────────────────────────────────
-
-  static MedicationStatus _fromRpcStatus(String status) {
-    switch (status) {
-      case 'taken':
-        return MedicationStatus.completed;
-      case 'active':
-        return MedicationStatus.active;
-      case 'late':
-        return MedicationStatus.late;
-      case 'missed':
-        return MedicationStatus.missed;
-      default:
-        return MedicationStatus.locked;
-    }
+  String _formatDate(DateTime date) {
+    const months = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  _MedicationSlot _parseSlot(Map<String, dynamic> s) {
-    final session = s['session'] as String? ?? '';
-    return _MedicationSlot(
-      session: session,
-      label: s['label'] as String? ?? '',
-      timeRange: s['window'] as String? ?? '',
-      medications: _defaultMeds[session] ?? [],
-      status: _fromRpcStatus(s['status'] as String? ?? 'locked'),
-      takenAt: s['taken_at'] != null ? DateTime.tryParse(s['taken_at']) : null,
-      lateReason: s['late_reason'] as String?,
+  String _calculateTreatmentPhase(DateTime startDate) {
+    final now = DateTime.now();
+    final difference = now.difference(startDate).inDays;
+    final months = (difference / 30).floor() + 1;
+    return months > 6 ? '6' : months.toString();
+  }
+
+  // --- Handlers ---
+
+  void _redirectToLogin() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const PortalRoleScreen()),
+      (route) => false,
     );
   }
 
-  int get _treatmentMonth {
-    if (_treatmentStartDate == null) return 1;
-    final diff = DateTime.now().difference(_treatmentStartDate!);
-    return (diff.inDays / 30).floor().clamp(1, 6);
-  }
-
-  String get _formattedDate {
-    return '${_dayNames[_selectedDate.weekday - 1]}, ${_selectedDate.day} ${_monthNames[_selectedDate.month - 1]} ${_selectedDate.year}';
-  }
-
-  String _formatDate(DateTime dt) {
-    return '${dt.day} ${_monthNames[dt.month - 1]} ${dt.year}';
-  }
-
-  // ────────────────────────────────────────────────────────────────────────
-  // Actions  (DB write)
-  // ────────────────────────────────────────────────────────────────────────
-
-  Future<void> _confirmMedication(_MedicationSlot slot,
-      {String? reason}) async {
-    if (_session == null) return;
-
-    if (_session!.patientId == 'guest') {
-      setState(() {
-        _guestConfirmedAt[slot.session] = DateTime.now();
-        _slots = _buildGuestMedicationSlots(_guestConfirmedAt);
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '✅ Obat ${slot.label.toLowerCase()} berhasil dicatat',
-              style: GoogleFonts.manrope(color: Colors.white),
-            ),
-            backgroundColor: const Color(0xFF2E7D32),
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+  void _handlePreviousDay() {
+    if (_viewedDateOffset > -2) {
+      setState(() => _viewedDateOffset--);
+      if (_session != null) {
+        _fetchMedicationSchedule(_session!.patientId, _viewedDateOffset);
       }
-      return;
     }
+  }
 
+  void _handleNextDay() {
+    if (_viewedDateOffset < 0) {
+      setState(() => _viewedDateOffset++);
+      if (_session != null) {
+        _fetchMedicationSchedule(_session!.patientId, _viewedDateOffset);
+      }
+    }
+  }
+
+  Future<void> _handleConfirmMedication(MedicationSlot slot) async {
+    if (_session == null) return;
     try {
+      final now = DateTime.now();
+
       await _patientService.logMedication(
         patientId: _session!.patientId,
+        date: now,
         session: slot.session,
-        reason: reason,
-        date: _selectedDate,
       );
 
-      // Track locally so the card instantly shows as completed
-      // even if the server RPC still returns 'late' status.
-      setState(() {
-        _justConfirmedSessions.add(slot.session);
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '✅ Obat ${slot.label.toLowerCase()} berhasil dicatat',
-              style: GoogleFonts.manrope(color: Colors.white),
-            ),
-            backgroundColor: const Color(0xFF2E7D32),
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-        _loadData(); // refresh
-      }
+      _showSnackBar('✅ Obat sesi ${slot.label} berhasil dicatat.',
+          const Color(0xFF2E7D32));
+      _fetchMedicationSchedule(_session!.patientId, _viewedDateOffset);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+      _showSnackBar('Gagal mencatat obat: $e', Colors.redAccent);
     }
   }
 
-  Future<void> _navigateToWeightInput() async {
-    if (mounted) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (ctx) => const PatientWeightInputPage(),
-        ),
-      );
-
-      // Refresh data setelah kembali dari halaman berat badan
-      _loadData();
-    }
-  }
-
-  Future<void> _showLateReasonDialog(_MedicationSlot slot) async {
-    final controller = TextEditingController();
+  Future<void> _handleLateMedication(MedicationSlot slot) async {
+    final reasonController = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Alasan Terlambat',
-            style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+      builder: (context) => AlertDialog(
+        title: const Text('Alasan Terlambat'),
         content: TextField(
-          controller: controller,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: 'Ceritakan alasan Anda terlambat minum obat...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          controller: reasonController,
+          decoration: const InputDecoration(
+            hintText: 'Masukkan alasan...',
           ),
+          autofocus: true,
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF001833),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Kirim'),
+            onPressed: () => Navigator.pop(context, reasonController.text),
+            child: const Text('Simpan'),
           ),
         ],
       ),
     );
 
-    if (reason != null && reason.isNotEmpty) {
-      // Log medication taken with the late reason attached
-      await _confirmMedication(slot, reason: reason);
+    if (reason != null && reason.isNotEmpty && _session != null) {
+      try {
+        final now = DateTime.now();
+
+        await _patientService.logMedication(
+          patientId: _session!.patientId,
+          date: now,
+          session: slot.session,
+          reason: reason,
+        );
+
+        _showSnackBar(
+            '✅ Obat dicatat dengan alasan terlambat.', const Color(0xFF2E7D32));
+        _fetchMedicationSchedule(_session!.patientId, _viewedDateOffset);
+      } catch (e) {
+        _showSnackBar('Gagal mencatat obat: $e', Colors.redAccent);
+      }
     }
   }
 
-  // ────────────────────────────────────────────────────────────────────────
-  // Error view
-  // ────────────────────────────────────────────────────────────────────────
-  Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_rounded,
-                size: 64, color: Color(0xFFC4C6CF)),
-            const SizedBox(height: 16),
-            Text(
-              'Gagal memuat data',
-              style: GoogleFonts.manrope(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF112D4E),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.manrope(
-                fontSize: 13,
-                color: const Color(0xFF5A8DA0),
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadData,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Coba Lagi'),
-            ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () async {
-                _realtimeService.stop();
-                await _authService.logoutPatient();
-                if (mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PortalRoleScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-              child: const Text('Kembali ke Halaman Awal'),
-            ),
-          ],
-        ),
+  void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.manrope(color: Colors.white)),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────
-  // BUILD  –  home content only (no profile, no bottom nav)
-  // ────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF112D4E)),
+      return const Scaffold(
+        body: Center(
+            child: CircularProgressIndicator(color: Color(0xFF112D4E))),
       );
     }
 
     if (_error != null) {
-      return _buildError();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildHeader(),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadData,
-            color: const Color(0xFF112D4E),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(
-                top: 16,
-                left: 24,
-                right: 24,
-                bottom: 100,
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadAllData,
+                child: const Text('Coba Lagi'),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_isRefreshing)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 8),
-                      child: LinearProgressIndicator(
-                        minHeight: 2,
-                        backgroundColor: Color(0xFFE5F0FF),
-                        color: Color(0xFF112D4E),
-                      ),
-                    ),
-                  _buildScheduleHeader(),
-                  const SizedBox(height: 16),
-                  _buildProgressCard(),
-                  const SizedBox(height: 16),
-                  if (_nextVisit != null) ...[
-                    _buildControlReminder(),
-                    const SizedBox(height: 24),
-                  ],
-                  ..._slots.map((slot) {
-                    // Override status if user just confirmed this session
-                    // (instant visual feedback before server refresh)
-                    final effectiveStatus =
-                        _justConfirmedSessions.contains(slot.session)
-                            ? MedicationStatus.completed
-                            : slot.status;
-                    final effectiveSlot = _MedicationSlot(
-                      session: slot.session,
-                      label: slot.label,
-                      timeRange: slot.timeRange,
-                      medications: slot.medications,
-                      status: effectiveStatus,
-                      takenAt: slot.takenAt,
-                      lateReason: slot.lateReason,
-                    );
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: _MedicationCard(
-                        slot: effectiveSlot,
-                        onConfirm: () => _confirmMedication(slot),
-                        onLateReason: () => _showLateReasonDialog(slot),
-                      ),
-                    );
-                  }),
-                  const SizedBox(height: 8),
-                  _buildWeightCard(),
-                ],
-              ),
-            ),
+            ],
           ),
         ),
-      ],
-    );
-  }
+      );
+    }
 
-  // ──────────────────────────────────────────────────────────────
-  // Header
-  // ──────────────────────────────────────────────────────────────
-  Widget _buildHeader() {
-    final name = _session?.fullName ?? 'Pasien';
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'P';
+    final String name = _dbProfile?['full_name'] ?? 'Pasien';
+    final targetDate = DateTime.now().add(Duration(days: _viewedDateOffset));
+    final dateString = _viewedDateOffset == 0
+        ? '${_formatDate(targetDate)} (Hari Ini)'
+        : _formatDate(targetDate);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 6, 24, 10),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF112D4E), Color(0xFF3F72AF)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: Colors.white.withOpacity(0.2),
-              child: Text(
-                initial,
-                style: GoogleFonts.manrope(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+    // Hitung progress bulan
+    final startDateStr = _dbProfile?['treatment_start_date'];
+    int currentMonth = 1;
+    if (startDateStr != null) {
+      final startDate = DateTime.tryParse(startDateStr);
+      if (startDate != null) {
+        currentMonth = int.tryParse(_calculateTreatmentPhase(startDate)) ?? 1;
+      }
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: RefreshIndicator(
+        onRefresh: _loadAllData,
+        color: const Color(0xFF112D4E),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 100), // padding for bottom nav
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PatientHomeHeader(
+                name: name,
+                realtimeService: _realtimeService,
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Halo, $name',
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.manrope(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.22,
-                ),
-              ),
-            ),
-            const Spacer(),
-            StreamBuilder<NotificationSnapshot>(
-              stream: _realtimeService.stream,
-              builder: (context, snapshot) {
-                final unreadCount = snapshot.data?.unreadCount ?? 0;
-                return Stack(
-                  clipBehavior: Clip.none,
+
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Material(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
+                    // --- Progress Card ---
+                    PatientProgressCard(treatmentMonth: currentMonth),
+                    const SizedBox(height: 16),
+
+                    // --- Control Reminder Card (jika ada) ---
+                    if (_nextControlVisit != null) ...[
+                      GestureDetector(
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  const PatientNotificationPage(),
-                            ),
-                          );
+                                builder: (_) =>
+                                    const PatientControlSchedulePage()),
+                          ).then((_) => _loadAllData()); // refresh on return
                         },
-                        child: const Padding(
-                          padding: EdgeInsets.all(10),
-                          child: Icon(Icons.notifications,
-                              size: 26, color: Colors.white),
+                        child: PatientControlReminderCard(
+                          scheduledDate: DateTime.parse(
+                              _nextControlVisit!['scheduled_date']),
+                          formattedDate: _formatDate(DateTime.parse(
+                              _nextControlVisit!['scheduled_date'])),
+                          location:
+                              _nextControlVisit!['location'] ?? 'Fasilitas Kesehatan',
                         ),
                       ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // --- Weight Input Card ---
+                    PatientWeightCard(
+                      onInputTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const PatientWeightInputPage()),
+                        );
+                      },
                     ),
-                    if (unreadCount > 0)
-                      Positioned(
-                        right: -1,
-                        top: -1,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFE53935),
-                            shape: BoxShape.circle,
+
+                    const SizedBox(height: 32),
+
+                    // --- Jadwal Minum Obat Header ---
+                    PatientScheduleHeader(
+                      isToday: _viewedDateOffset == 0,
+                      isMaxPast: _viewedDateOffset <= -2,
+                      formattedDate: dateString,
+                      onPrevious: _handlePreviousDay,
+                      onNext: _handleNextDay,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // --- Medication List ---
+                    if (_medicationSchedule.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Text(
+                            'Tidak ada jadwal obat untuk hari ini.',
+                            style: GoogleFonts.manrope(
+                                color: const Color(0xFF64748B)),
                           ),
                         ),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────────
-  // Schedule header
-  // ──────────────────────────────────────────────────────────────
-  Widget _buildScheduleHeader() {
-    final now = DateTime.now();
-    final isToday = _selectedDate.year == now.year &&
-        _selectedDate.month == now.month &&
-        _selectedDate.day == now.day;
-
-    // Batas mundur maksimal 3 hari
-    final today = DateTime(now.year, now.month, now.day);
-    final selected =
-        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
-    final daysDifference = today.difference(selected).inDays;
-    final isMaxPast = daysDifference >= 3;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isToday ? 'Jadwal Hari Ini' : 'Jadwal Sebelumnya',
-              style: GoogleFonts.manrope(
-                color: const Color(0xFF001833),
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _formattedDate,
-              style: GoogleFonts.manrope(
-                color: const Color(0xFF43474E),
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.chevron_left,
-                  color: isMaxPast ? Colors.grey : const Color(0xFF112D4E)),
-              onPressed: isMaxPast
-                  ? null
-                  : () {
-                      setState(() {
-                        _selectedDate =
-                            _selectedDate.subtract(const Duration(days: 1));
-                        _loadData();
-                      });
-                    },
-            ),
-            IconButton(
-              icon: Icon(Icons.chevron_right,
-                  color: isToday ? Colors.grey : const Color(0xFF112D4E)),
-              onPressed: isToday
-                  ? null
-                  : () {
-                      setState(() {
-                        _selectedDate =
-                            _selectedDate.add(const Duration(days: 1));
-                        _loadData();
-                      });
-                    },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────────
-  // Progress card  –  "Bulan X dari 6"
-  // ──────────────────────────────────────────────────────────────
-  Widget _buildProgressCard() {
-    final month = _treatmentMonth;
-    final progress = month / 6;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'PROGRESS PENGOBATAN',
-                style: GoogleFonts.manrope(
-                  color: const Color(0xFF43474E),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.60,
-                ),
-              ),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'Bulan $month ',
-                      style: GoogleFonts.manrope(
-                        color: const Color(0xFF001833),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'dari 6',
-                      style: GoogleFonts.manrope(
-                        color: const Color(0xFF43474E),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
+                      )
+                    else
+                      ..._medicationSchedule.map((slot) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: MedicationCard(
+                              slot: slot,
+                              onConfirm: () => _handleConfirmMedication(slot),
+                              onLateReason: () => _handleLateMedication(slot),
+                            ),
+                          )),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 12,
-              backgroundColor: const Color(0xFFEDEEEF),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFF2A609C)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────────
-  // Control reminder  –  dari tabel clinic_visits
-  // ──────────────────────────────────────────────────────────────
-  Widget _buildControlReminder() {
-    if (_nextVisit == null) return const SizedBox.shrink();
-
-    final scheduleDate = DateTime.parse(_nextVisit!['scheduled_date']);
-    final daysLeft = scheduleDate.difference(DateTime.now()).inDays;
-    final formattedDate = _formatDate(scheduleDate);
-    final location = _nextVisit!['location'] ?? 'Klinik / Puskesmas';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFDBE2EF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x19112D4E)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.notification_important_rounded,
-              color: Color(0xFF112D4E), size: 22),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  daysLeft > 0
-                      ? 'Pengingat Kontrol: $daysLeft Hari Lagi'
-                      : daysLeft == 0
-                          ? '🔔 Jadwal Kontrol Hari Ini!'
-                          : '⚠️ Jadwal kontrol terlewat',
-                  style: GoogleFonts.manrope(
-                    color: const Color(0xFF112D4E),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$location\n$formattedDate',
-                  style: GoogleFonts.manrope(
-                    color: const Color(0xCC112D4E),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 1.43,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────────
-  // Weight update card
-  // ──────────────────────────────────────────────────────────────
-  Widget _buildWeightCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD3E3FF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF8BBBFD)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF004882),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const Icon(Icons.monitor_weight_outlined,
-                      color: Colors.white, size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Update Berat\nBadan',
-                        style: GoogleFonts.manrope(
-                          color: const Color(0xFF001C39),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _navigateToWeightInput,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0C000000),
-                    blurRadius: 2,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Text(
-                'Input',
-                style: GoogleFonts.manrope(
-                  color: const Color(0xFF2A609C),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ===========================================================================
-// Medication card – renders differently based on MedicationStatus
-// Clean OOP: uses a shared card shell with Strategy-like button injection
-// ===========================================================================
-
-/// Shared visual properties for each card variant.
-class _CardVariant {
-  final Color accentColor;
-  final Color borderColor;
-  final List<BoxShadow> shadows;
-  final Color? bgColor;
-
-  const _CardVariant({
-    required this.accentColor,
-    required this.borderColor,
-    required this.shadows,
-    this.bgColor,
-  });
-}
-
-/// Shared card shell – every variant uses this same layout.
-class _MedicationCard extends StatelessWidget {
-  final _MedicationSlot slot;
-  final VoidCallback? onConfirm;
-  final VoidCallback? onLateReason;
-
-  const _MedicationCard({
-    required this.slot,
-    this.onConfirm,
-    this.onLateReason,
-  });
-
-  static const _cardVariants = {
-    MedicationStatus.completed: _CardVariant(
-      accentColor: Color(0xFF2A609C),
-      borderColor: Color(0x4CC4C6CF),
-      shadows: [
-        BoxShadow(
-          color: Color(0x0C000000),
-          blurRadius: 2,
-          offset: Offset(0, 1),
-        ),
-      ],
-    ),
-    MedicationStatus.active: _CardVariant(
-      accentColor: Color(0xFF001833),
-      borderColor: Color(0xFF001833),
-      shadows: [
-        BoxShadow(
-          color: Color(0x14001833),
-          blurRadius: 30,
-          offset: Offset(0, 8),
-        ),
-      ],
-    ),
-    MedicationStatus.late: _CardVariant(
-      accentColor: Color(0xFFE4A700),
-      borderColor: Color(0xFFE19200),
-      shadows: [
-        BoxShadow(
-          color: Color(0x14001833),
-          blurRadius: 30,
-          offset: Offset(0, 8),
-        ),
-      ],
-    ),
-    MedicationStatus.missed: _CardVariant(
-      accentColor: Color(0xFFC50000),
-      borderColor: Color(0xFFA60000),
-      shadows: [
-        BoxShadow(
-          color: Color(0x14001833),
-          blurRadius: 30,
-          offset: Offset(0, 8),
-        ),
-      ],
-    ),
-    MedicationStatus.locked: _CardVariant(
-      accentColor: Color(0xFF43474E),
-      borderColor: Color(0xFFE1E3E4),
-      shadows: [],
-      bgColor: Color(0xFFF8F9FA),
-    ),
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    // If medication was already taken, always show as completed
-    if (slot.takenAt != null) {
-      return _buildCompleted();
-    }
-
-    switch (slot.status) {
-      case MedicationStatus.completed:
-        return _buildCompleted();
-      case MedicationStatus.active:
-        return _buildActionable(
-          variant: _cardVariants[MedicationStatus.active]!,
-          button: _FilledButton(
-            label: 'Konfirmasi Minum Obat',
-            onPressed: onConfirm,
-          ),
-        );
-      case MedicationStatus.late:
-        return _buildActionable(
-          variant: _cardVariants[MedicationStatus.late]!,
-          badge: _CornerBadge(
-            label: 'Terlambat',
-            bgColor: const Color(0xFFBA7600),
-          ),
-          button: _OutlinedButton(
-            label: 'Catat Alasan Terlambat',
-            onPressed: onLateReason,
-          ),
-        );
-      case MedicationStatus.missed:
-        return _buildActionable(
-          variant: _cardVariants[MedicationStatus.missed]!,
-          badge: _CornerBadge(
-            label: 'Belum Minum Obat',
-            bgColor: const Color(0xFFBA0000),
-          ),
-          button: _FilledButton(
-            label: 'Konfirmasi Minum Obat',
-            onPressed: onConfirm,
-          ),
-        );
-      case MedicationStatus.locked:
-        return _buildLocked();
-    }
-  }
-
-  // ── Completed (no accent, no badge, no button) ──
-  Widget _buildCompleted() {
-    final v = _cardVariants[MedicationStatus.completed]!;
-    return _CardFrame(
-      borderColor: v.borderColor,
-      shadows: v.shadows,
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _HeaderRow(label: slot.label, timeRange: slot.timeRange),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.check_circle_rounded,
-                  color: Color(0xFF2A609C), size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Selesai diminum',
-                style: GoogleFonts.manrope(
-                  color: const Color(0xFF2A609C),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Actionable (accent bar + optional badge + meds + button) ──
-  Widget _buildActionable({
-    required _CardVariant variant,
-    _CornerBadge? badge,
-    required Widget button,
-  }) {
-    return _CardFrame(
-      borderColor: variant.borderColor,
-      shadows: variant.shadows,
-      clip: true,
-      padding: const EdgeInsets.all(24),
-      stackChildren: [
-        // Left accent bar
-        Positioned(
-          left: 0,
-          top: 0,
-          bottom: 0,
-          child: Container(
-            width: 4,
-            color: variant.accentColor,
-          ),
-        ),
-        // Corner badge (if any)
-        if (badge != null)
-          Positioned(
-            right: 0,
-            top: 0,
-            child: badge,
-          ),
-        // Content
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _HeaderRow(
-                  label: slot.label, timeRange: slot.timeRange, dark: true),
-              const SizedBox(height: 16),
-              _MedicationList(medications: slot.medications),
-              const SizedBox(height: 12),
-              SizedBox(width: double.infinity, child: button),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Locked (muted, no interaction) ──
-  Widget _buildLocked() {
-    final v = _cardVariants[MedicationStatus.locked]!;
-    return Opacity(
-      opacity: 0.60,
-      child: _CardFrame(
-        borderColor: v.borderColor,
-        shadows: v.shadows,
-        bgColor: v.bgColor,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _HeaderRow(label: slot.label, timeRange: slot.timeRange),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.lock_rounded,
-                    color: Color(0xFF43474E), size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Terkunci',
-                  style: GoogleFonts.manrope(
-                    color: const Color(0xFF43474E),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Shared card frame –  the outer container for all variants
-// ═══════════════════════════════════════════════════════════════════════════
-class _CardFrame extends StatelessWidget {
-  final Color borderColor;
-  final List<BoxShadow> shadows;
-  final EdgeInsets padding;
-  final bool clip;
-  final Color? bgColor;
-  final Widget? child;
-  final List<Widget>? stackChildren;
-
-  const _CardFrame({
-    required this.borderColor,
-    required this.shadows,
-    required this.padding,
-    this.clip = false,
-    this.bgColor,
-    this.child,
-    this.stackChildren,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final container = Container(
-      width: double.infinity,
-      padding: child != null ? padding : EdgeInsets.zero,
-      clipBehavior: clip ? Clip.antiAlias : Clip.none,
-      decoration: BoxDecoration(
-        color: bgColor ?? Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
-        boxShadow: shadows,
-      ),
-      child: child,
-    );
-
-    if (stackChildren != null) {
-      return Container(
-        width: double.infinity,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor),
-          boxShadow: shadows,
-        ),
-        child: Stack(children: stackChildren!),
-      );
-    }
-
-    return container;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Corner badge  –  "Terlambat" / "Belum Minum Obat"
-// ═══════════════════════════════════════════════════════════════════════════
-class _CornerBadge extends StatelessWidget {
-  final String label;
-  final Color bgColor;
-
-  const _CornerBadge({required this.label, required this.bgColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.manrope(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.60,
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Medication list  –  shared between actionable cards
-// ═══════════════════════════════════════════════════════════════════════════
-class _MedicationList extends StatelessWidget {
-  final List<String> medications;
-  const _MedicationList({required this.medications});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: medications
-          .map((med) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  med,
-                  style: GoogleFonts.manrope(
-                    color: const Color(0xFF43474E),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ))
-          .toList(),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Button variants  –  filled (dark) / outlined
-// ═══════════════════════════════════════════════════════════════════════════
-class _FilledButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-
-  const _FilledButton({required this.label, this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF001833),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.manrope(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.60,
-        ),
-      ),
-    );
-  }
-}
-
-class _OutlinedButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-
-  const _OutlinedButton({required this.label, this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: Color(0xFFC4C6CF)),
-        foregroundColor: const Color(0xFF191C1D),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.manrope(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.60,
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Shared header row  –  label + time range pill
-// ═══════════════════════════════════════════════════════════════════════════
-class _HeaderRow extends StatelessWidget {
-  final String label;
-  final String timeRange;
-  final bool dark;
-
-  const _HeaderRow({
-    required this.label,
-    required this.timeRange,
-    this.dark = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textColor = dark ? const Color(0xFF001833) : const Color(0xFF43474E);
-    final fontSize = dark ? 24.0 : 18.0;
-    final fontWeight = dark ? FontWeight.w600 : FontWeight.w400;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.access_time_rounded,
-                size: 22, color: Color(0xFF43474E)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.manrope(
-                color: textColor,
-                fontSize: fontSize,
-                fontWeight: fontWeight,
-              ),
-            ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: dark ? const Color(0xFFD4E3FF) : const Color(0xFFF8F9FA),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            timeRange,
-            style: GoogleFonts.manrope(
-              color: dark ? const Color(0xFF001833) : const Color(0xFF43474E),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.60,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
