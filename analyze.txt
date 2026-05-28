@@ -1,0 +1,252 @@
+﻿Analyzing TBConnect...                                          
+
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\doctor_login_screen.dart:110:37 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\doctor_login_screen.dart:149:37 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\portal_role_screen.dart:20:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\portal_role_screen.dart:40:23 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:265:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:287:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:351:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:352:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:388:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:430:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:432:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_dashboard_page.dart:448:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_feedback_page.dart:134:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_feedback_page.dart:186:65 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\doctor_feedback_page.dart:189:67 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\doctor\presentation\doctor_feedback_page.dart:213:33 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\features\doctor\presentation\home_page.dart:500:25 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:193:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:215:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:251:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:257:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:451:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:454:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:457:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:476:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:510:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:684:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:797:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:805:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:817:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_detail_page.dart:844:96 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_qr_page.dart:82:73 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_qr_page.dart:208:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\doctor\presentation\patient_qr_page.dart:307:46 - deprecated_member_use
+  error - The class '_PatientHomePageState' doesn't have an unnamed constructor - lib\features\patient\presentation\patient_home_page.dart:56:43 - new_with_undefined_constructor_default
+  error - Missing concrete implementation of 'State.build' - lib\features\patient\presentation\patient_home_page.dart:59:7 - non_abstract_class_inherits_abstract_member
+   info - The private field _slots could be 'final' - lib\features\patient\presentation\patient_home_page.dart:67:25 - prefer_final_fields
+   info - The private field _isLoading could be 'final' - lib\features\patient\presentation\patient_home_page.dart:70:8 - prefer_final_fields
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:71:5 - expected_class_member
+   info - The variable name 'Container' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_home_page.dart:71:12 - non_constant_identifier_names
+  error - 'Container' must have a method body because '_PatientHomePageState' isn't abstract - lib\features\patient\presentation\patient_home_page.dart:71:12 - concrete_class_with_abstract_member
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\patient\presentation\patient_home_page.dart:72:12 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\patient\presentation\patient_home_page.dart:72:12 - obsolete_colon_for_default_value
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\patient\presentation\patient_home_page.dart:73:13 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\patient\presentation\patient_home_page.dart:73:13 - obsolete_colon_for_default_value
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\patient\presentation\patient_home_page.dart:74:14 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\patient\presentation\patient_home_page.dart:74:14 - obsolete_colon_for_default_value
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\patient\presentation\patient_home_page.dart:75:17 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\patient\presentation\patient_home_page.dart:75:17 - obsolete_colon_for_default_value
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\features\patient\presentation\patient_home_page.dart:82:12 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\features\patient\presentation\patient_home_page.dart:82:12 - obsolete_colon_for_default_value
+  error - The default value of an optional parameter must be constant - lib\features\patient\presentation\patient_home_page.dart:82:14 - non_constant_default_value
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_home_page.dart:88:45 - deprecated_member_use
+  error - Undefined name 'initial' - lib\features\patient\presentation\patient_home_page.dart:90:17 - undefined_identifier
+  error - Undefined name 'name' - lib\features\patient\presentation\patient_home_page.dart:100:25 - undefined_identifier
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_home_page.dart:120:43 - deprecated_member_use
+  error - The named parameter 'height' isn't defined - lib\features\patient\presentation\patient_home_page.dart:146:27 - undefined_named_parameter
+   info - An uninitialized field should have an explicit type annotation - lib\features\patient\presentation\patient_home_page.dart:161:15 - prefer_typing_uninitialized_variables
+  error - Expected to find ';' - lib\features\patient\presentation\patient_home_page.dart:161:15 - expected_token
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:161:15 - missing_const_final_var_or_type
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:161:23 - expected_class_member
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:161:25 - expected_class_member
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:161:28 - expected_class_member
+   info - An uninitialized field should have an explicit type annotation - lib\features\patient\presentation\patient_home_page.dart:162:15 - prefer_typing_uninitialized_variables
+  error - Expected to find ';' - lib\features\patient\presentation\patient_home_page.dart:162:15 - expected_token
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:162:15 - missing_const_final_var_or_type
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:162:21 - expected_class_member
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:162:23 - expected_class_member
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:162:26 - expected_class_member
+   info - An uninitialized field should have an explicit type annotation - lib\features\patient\presentation\patient_home_page.dart:163:15 - prefer_typing_uninitialized_variables
+  error - Expected to find ';' - lib\features\patient\presentation\patient_home_page.dart:163:15 - expected_token
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:163:15 - missing_const_final_var_or_type
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:163:33 - expected_class_member
+  error - The name of a constructor must match the name of the enclosing class - lib\features\patient\presentation\patient_home_page.dart:163:35 - invalid_constructor_name
+   info - Empty constructor bodies should be written using a ';' rather than '{}' - lib\features\patient\presentation\patient_home_page.dart:163:49 - empty_constructor_bodies
+  error - A function body must be provided - lib\features\patient\presentation\patient_home_page.dart:163:49 - missing_function_body
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:163:49 - expected_class_member
+   info - An uninitialized field should have an explicit type annotation - lib\features\patient\presentation\patient_home_page.dart:164:15 - prefer_typing_uninitialized_variables
+  error - Expected to find ';' - lib\features\patient\presentation\patient_home_page.dart:164:15 - expected_token
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:164:15 - missing_const_final_var_or_type
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:164:30 - expected_class_member
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:164:32 - expected_class_member
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:164:33 - expected_class_member
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:165:13 - expected_class_member
+  error - Expected a class member - lib\features\patient\presentation\patient_home_page.dart:165:14 - expected_class_member
+   info - The private field _slots could be 'final' - lib\features\patient\presentation\patient_home_page.dart:166:13 - prefer_final_fields
+  error - The name '_slots' is already defined - lib\features\patient\presentation\patient_home_page.dart:166:13 - duplicate_definition
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:166:13 - missing_const_final_var_or_type
+  error - Undefined name '_guestConfirmedAt' - lib\features\patient\presentation\patient_home_page.dart:166:49 - undefined_identifier
+   info - The private field _treatmentStartDate could be 'final' - lib\features\patient\presentation\patient_home_page.dart:167:13 - prefer_final_fields
+  error - The name '_treatmentStartDate' is already defined - lib\features\patient\presentation\patient_home_page.dart:167:13 - duplicate_definition
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:167:13 - missing_const_final_var_or_type
+   info - The private field _nextVisit could be 'final' - lib\features\patient\presentation\patient_home_page.dart:168:13 - prefer_final_fields
+  error - The name '_nextVisit' is already defined - lib\features\patient\presentation\patient_home_page.dart:168:13 - duplicate_definition
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:168:13 - missing_const_final_var_or_type
+   info - The private field _isLoading could be 'final' - lib\features\patient\presentation\patient_home_page.dart:176:13 - prefer_final_fields
+  error - The name '_isLoading' is already defined - lib\features\patient\presentation\patient_home_page.dart:176:13 - duplicate_definition
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:176:13 - missing_const_final_var_or_type
+   info - The private field _isRefreshing could be 'final' - lib\features\patient\presentation\patient_home_page.dart:177:13 - prefer_final_fields
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:177:13 - missing_const_final_var_or_type
+   info - Redundant initialization to 'null' - lib\features\patient\presentation\patient_home_page.dart:178:13 - avoid_init_to_null
+   info - The private field _error could be 'final' - lib\features\patient\presentation\patient_home_page.dart:178:13 - prefer_final_fields
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:178:13 - missing_const_final_var_or_type
+  error - Expected a method, getter, setter or operator declaration - lib\features\patient\presentation\patient_home_page.dart:179:12 - expected_executable
+  error - Unexpected text ';' - lib\features\patient\presentation\patient_home_page.dart:179:13 - unexpected_token
+  error - Expected a method, getter, setter or operator declaration - lib\features\patient\presentation\patient_home_page.dart:180:9 - expected_executable
+   info - An uninitialized variable should have an explicit type annotation - lib\features\patient\presentation\patient_home_page.dart:181:9 - prefer_typing_uninitialized_variables
+  error - 'return' can't be used as an identifier because it's a keyword - lib\features\patient\presentation\patient_home_page.dart:181:9 - expected_identifier_but_got_keyword
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\features\patient\presentation\patient_home_page.dart:181:9 - missing_const_final_var_or_type
+  error - Expected a method, getter, setter or operator declaration - lib\features\patient\presentation\patient_home_page.dart:182:7 - expected_executable
+  error - The await expression can only be used in an async function - lib\features\patient\presentation\patient_home_page.dart:185:25 - await_in_wrong_context
+  error - Undefined name '_patientService' - lib\features\patient\presentation\patient_home_page.dart:185:31 - undefined_identifier
+  error - Undefined name 'session' - lib\features\patient\presentation\patient_home_page.dart:186:22 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:186:47 - undefined_identifier
+  error - 'try' can't be used as an identifier because it's a keyword - lib\features\patient\presentation\patient_home_page.dart:194:7 - expected_identifier_but_got_keyword
+  error - Functions must have an explicit list of parameters - lib\features\patient\presentation\patient_home_page.dart:194:7 - missing_function_parameters
+  error - The await expression can only be used in an async function - lib\features\patient\presentation\patient_home_page.dart:195:24 - await_in_wrong_context
+  error - Undefined name '_supabase' - lib\features\patient\presentation\patient_home_page.dart:195:30 - undefined_identifier
+  error - Undefined name 'session' - lib\features\patient\presentation\patient_home_page.dart:196:27 - undefined_identifier
+  error - 'catch' can't be used as an identifier because it's a keyword - lib\features\patient\presentation\patient_home_page.dart:200:9 - expected_identifier_but_got_keyword
+  error - 'if' can't be used as an identifier because it's a keyword - lib\features\patient\presentation\patient_home_page.dart:205:7 - expected_identifier_but_got_keyword
+  error - The function 'setState' isn't defined - lib\features\patient\presentation\patient_home_page.dart:206:9 - undefined_function
+  error - Undefined name '_session' - lib\features\patient\presentation\patient_home_page.dart:207:11 - undefined_identifier
+  error - Undefined name 'session' - lib\features\patient\presentation\patient_home_page.dart:207:22 - undefined_identifier
+  error - Undefined name '_slots' - lib\features\patient\presentation\patient_home_page.dart:208:11 - undefined_identifier
+  error - Undefined name '_treatmentStartDate' - lib\features\patient\presentation\patient_home_page.dart:210:11 - undefined_identifier
+  error - Undefined name 'session' - lib\features\patient\presentation\patient_home_page.dart:210:33 - undefined_identifier
+  error - Undefined name '_nextVisit' - lib\features\patient\presentation\patient_home_page.dart:211:11 - undefined_identifier
+  error - Undefined name '_isLoading' - lib\features\patient\presentation\patient_home_page.dart:212:11 - undefined_identifier
+  error - Undefined name '_isRefreshing' - lib\features\patient\presentation\patient_home_page.dart:213:11 - undefined_identifier
+  error - Undefined name '_error' - lib\features\patient\presentation\patient_home_page.dart:214:11 - undefined_identifier
+  error - Undefined name 'await' in function body not marked with 'async' - lib\features\patient\presentation\patient_home_page.dart:218:7 - undefined_identifier_await
+  error - Functions must have an explicit list of parameters - lib\features\patient\presentation\patient_home_page.dart:218:13 - missing_function_parameters
+  error - A function body must be provided - lib\features\patient\presentation\patient_home_page.dart:218:29 - missing_function_body
+  error - Expected a method, getter, setter or operator declaration - lib\features\patient\presentation\patient_home_page.dart:218:29 - expected_executable
+  error - Undefined class 'patientId' - lib\features\patient\presentation\patient_home_page.dart:218:36 - undefined_class
+  error - Expected an identifier - lib\features\patient\presentation\patient_home_page.dart:218:53 - missing_identifier
+  error - A function body must be provided - lib\features\patient\presentation\patient_home_page.dart:218:54 - missing_function_body
+  error - Expected a method, getter, setter or operator declaration - lib\features\patient\presentation\patient_home_page.dart:219:5 - expected_executable
+  error - 'catch' can't be used as an identifier because it's a keyword - lib\features\patient\presentation\patient_home_page.dart:219:7 - expected_identifier_but_got_keyword
+  error - The name 'catch' is already defined - lib\features\patient\presentation\patient_home_page.dart:219:7 - duplicate_definition
+  error - Undefined name 'mounted' - lib\features\patient\presentation\patient_home_page.dart:220:11 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\features\patient\presentation\patient_home_page.dart:221:9 - undefined_function
+  error - Undefined name '_isLoading' - lib\features\patient\presentation\patient_home_page.dart:222:11 - undefined_identifier
+  error - Undefined name '_isRefreshing' - lib\features\patient\presentation\patient_home_page.dart:223:11 - undefined_identifier
+  error - Undefined name '_error' - lib\features\patient\presentation\patient_home_page.dart:224:11 - undefined_identifier
+  error - Expected a method, getter, setter or operator declaration - lib\features\patient\presentation\patient_home_page.dart:228:3 - expected_executable
+  error - Can't have modifier 'static' here - lib\features\patient\presentation\patient_home_page.dart:312:3 - extraneous_modifier
+  error - Undefined name '_defaultMeds' - lib\features\patient\presentation\patient_home_page.dart:333:20 - undefined_identifier
+  error - Undefined name '_treatmentStartDate' - lib\features\patient\presentation\patient_home_page.dart:341:9 - undefined_identifier
+  error - Undefined name '_treatmentStartDate' - lib\features\patient\presentation\patient_home_page.dart:342:44 - undefined_identifier
+  error - Undefined name '_dayNames' - lib\features\patient\presentation\patient_home_page.dart:347:15 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:347:25 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:347:56 - undefined_identifier
+  error - Undefined name '_monthNames' - lib\features\patient\presentation\patient_home_page.dart:347:77 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:347:89 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:347:117 - undefined_identifier
+  error - Undefined name '_monthNames' - lib\features\patient\presentation\patient_home_page.dart:351:25 - undefined_identifier
+  error - Undefined name '_session' - lib\features\patient\presentation\patient_home_page.dart:360:9 - undefined_identifier
+  error - Undefined name '_session' - lib\features\patient\presentation\patient_home_page.dart:362:9 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\features\patient\presentation\patient_home_page.dart:363:7 - undefined_function
+  error - Undefined name '_guestConfirmedAt' - lib\features\patient\presentation\patient_home_page.dart:364:9 - undefined_identifier
+  error - Undefined name '_slots' - lib\features\patient\presentation\patient_home_page.dart:365:9 - undefined_identifier
+  error - Undefined name '_guestConfirmedAt' - lib\features\patient\presentation\patient_home_page.dart:365:45 - undefined_identifier
+  error - Undefined name 'mounted' - lib\features\patient\presentation\patient_home_page.dart:368:11 - undefined_identifier
+  error - Undefined name 'context' - lib\features\patient\presentation\patient_home_page.dart:369:30 - undefined_identifier
+  error - Undefined name '_patientService' - lib\features\patient\presentation\patient_home_page.dart:386:13 - undefined_identifier
+  error - Undefined name '_session' - lib\features\patient\presentation\patient_home_page.dart:387:20 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:390:15 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\features\patient\presentation\patient_home_page.dart:395:7 - undefined_function
+  error - Undefined name '_justConfirmedSessions' - lib\features\patient\presentation\patient_home_page.dart:396:9 - undefined_identifier
+  error - Undefined name 'mounted' - lib\features\patient\presentation\patient_home_page.dart:399:11 - undefined_identifier
+  error - Undefined name 'context' - lib\features\patient\presentation\patient_home_page.dart:400:30 - undefined_identifier
+  error - The function '_loadData' isn't defined - lib\features\patient\presentation\patient_home_page.dart:412:9 - undefined_function
+  error - Undefined name 'mounted' - lib\features\patient\presentation\patient_home_page.dart:415:11 - undefined_identifier
+  error - Undefined name 'context' - lib\features\patient\presentation\patient_home_page.dart:416:30 - undefined_identifier
+  error - Undefined name 'mounted' - lib\features\patient\presentation\patient_home_page.dart:427:9 - undefined_identifier
+  error - Undefined name 'context' - lib\features\patient\presentation\patient_home_page.dart:429:9 - undefined_identifier
+  error - The function '_loadData' isn't defined - lib\features\patient\presentation\patient_home_page.dart:436:7 - undefined_function
+  error - Undefined name 'context' - lib\features\patient\presentation\patient_home_page.dart:443:16 - undefined_identifier
+  error - Undefined name '_error' - lib\features\patient\presentation\patient_home_page.dart:502:15 - undefined_identifier
+  error - Undefined name '_loadData' - lib\features\patient\presentation\patient_home_page.dart:511:26 - undefined_identifier
+  error - The method 'stop' isn't defined for the type 'Function' - lib\features\patient\presentation\patient_home_page.dart:518:34 - undefined_method
+  error - Undefined name '_authService' - lib\features\patient\presentation\patient_home_page.dart:519:23 - undefined_identifier
+  error - Undefined name 'mounted' - lib\features\patient\presentation\patient_home_page.dart:520:21 - undefined_identifier
+  error - Undefined name 'context' - lib\features\patient\presentation\patient_home_page.dart:522:21 - undefined_identifier
+  error - Undefined name '_isLoading' - lib\features\patient\presentation\patient_home_page.dart:541:9 - undefined_identifier
+  error - Undefined name '_error' - lib\features\patient\presentation\patient_home_page.dart:547:9 - undefined_identifier
+  error - Undefined name '_loadData' - lib\features\patient\presentation\patient_home_page.dart:552:18 - undefined_identifier
+  error - Undefined name '_isRefreshing' - lib\features\patient\presentation\patient_home_page.dart:561:17 - undefined_identifier
+  error - Undefined name '_nextVisit' - lib\features\patient\presentation\patient_home_page.dart:576:17 - undefined_identifier
+  error - Undefined name '_slots' - lib\features\patient\presentation\patient_home_page.dart:580:16 - undefined_identifier
+  error - Undefined name '_justConfirmedSessions' - lib\features\patient\presentation\patient_home_page.dart:584:19 - undefined_identifier
+  error - Undefined name '_session' - lib\features\patient\presentation\patient_home_page.dart:617:18 - undefined_identifier
+  error - The getter 'stream' isn't defined for the type 'InvalidType Function()' - lib\features\patient\presentation\patient_home_page.dart:644:36 - undefined_getter
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:696:21 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:697:9 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:698:9 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:703:18 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:703:38 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:703:59 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\features\patient\presentation\patient_home_page.dart:741:23 - undefined_function
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:742:25 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:743:29 - undefined_identifier
+  error - The function '_loadData' isn't defined - lib\features\patient\presentation\patient_home_page.dart:744:25 - undefined_function
+  error - The function 'setState' isn't defined - lib\features\patient\presentation\patient_home_page.dart:754:23 - undefined_function
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:755:25 - undefined_identifier
+  error - Undefined name '_selectedDate' - lib\features\patient\presentation\patient_home_page.dart:756:29 - undefined_identifier
+  error - The function '_loadData' isn't defined - lib\features\patient\presentation\patient_home_page.dart:757:25 - undefined_function
+  error - Undefined name '_nextVisit' - lib\features\patient\presentation\patient_home_page.dart:848:9 - undefined_identifier
+  error - Undefined name '_nextVisit' - lib\features\patient\presentation\patient_home_page.dart:850:41 - undefined_identifier
+  error - Undefined name '_nextVisit' - lib\features\patient\presentation\patient_home_page.dart:853:22 - undefined_identifier
+  error - Expected a method, getter, setter or operator declaration - lib\features\patient\presentation\patient_home_page.dart:993:1 - expected_executable
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_home_page.dart:1101:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_home_page.dart:1113:18 - prefer_const_constructors
+warning - Unused import: 'package:supabase_flutter/supabase_flutter.dart' - lib\features\patient\presentation\patient_notification_page.dart:4:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_notification_page.dart:542:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_notification_page.dart:593:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_notification_page.dart:635:34 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\patient\presentation\patient_notification_page.dart:823:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\patient\presentation\patient_notification_page.dart:838:40 - use_build_context_synchronously
+   info - The constant name 'sangat_buruk' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:12:3 - constant_identifier_names
+   info - The constant name 'kurang_baik' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:13:3 - constant_identifier_names
+   info - The constant name 'cukup_baik' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:14:3 - constant_identifier_names
+   info - The constant name 'sangat_baik' isn't a lowerCamelCase identifier - lib\features\patient\presentation\patient_symptoms_page.dart:15:3 - constant_identifier_names
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_symptoms_page.dart:239:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_symptoms_page.dart:248:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\patient\presentation\patient_symptoms_page.dart:282:13 - prefer_const_constructors
+warning - Unused import: 'patient_shell.dart' - lib\features\patient\presentation\patient_weight_input_page.dart:5:8 - unused_import
+warning - The value of the field '_error' isn't used - lib\features\patient\presentation\patient_weight_input_page.dart:35:11 - unused_field
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:143:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:178:9 - curly_braces_in_flow_control_structures
+   info - Unnecessary 'const' keyword - lib\features\patient\presentation\patient_weight_input_page.dart:256:43 - unnecessary_const
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:295:39 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\patient\presentation\patient_weight_input_page.dart:300:39 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_input_page.dart:316:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_input_page.dart:319:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_input_page.dart:410:57 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\features\patient\presentation\patient_weight_progress_page.dart:67:9 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patient\presentation\patient_weight_progress_page.dart:249:47 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\services\patient_service.dart:128:7 - avoid_print
+
+flutter : 241 issues found. (ran in 3.8s)
+At line:1 char:1
++ flutter analyze 2>&1 | Out-File -FilePath .\analyze.txt -Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (241 issues found. (ran in 3.8s):S 
+   tring) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

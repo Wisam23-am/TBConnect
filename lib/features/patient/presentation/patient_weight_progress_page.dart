@@ -156,6 +156,7 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
     return Scaffold(
       backgroundColor:
           const Color(0xFFF3F5F9), // Lighter background for modern look
+      appBar: _buildAppBar(),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF112D4E)))
@@ -164,13 +165,14 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
               : RefreshIndicator(
                   onRefresh: _loadWeightHistory,
                   color: const Color(0xFF112D4E),
-                  child: CustomScrollView(
+                  child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      _buildSliverAppBar(),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 24),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -190,8 +192,8 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
                             ],
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
     );
@@ -217,65 +219,40 @@ class _PatientWeightProgressPageState extends State<PatientWeightProgressPage> {
     );
   }
 
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 200,
-      pinned: true,
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.transparent,
       elevation: 0,
-      backgroundColor: const Color(0xFF112D4E),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF112D4E), Color(0xFF3F72AF)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.monitor_weight_outlined,
-                        color: Colors.white, size: 32),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Progres Berat Badan',
-                    style: GoogleFonts.manrope(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Pantau terus perkembangan fisik Anda',
-                    style: GoogleFonts.manrope(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      centerTitle: true,
+      automaticallyImplyLeading: false,
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF112D4E), Color(0xFF3F72AF)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
+      ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.monitor_weight_outlined,
+            color: Colors.white,
+            size: 24,
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Progres Berat Badan',
+            style: GoogleFonts.manrope(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.22,
+            ),
+          ),
+        ],
       ),
     );
   }
