@@ -89,7 +89,16 @@ class _DoctorMainShellState extends State<DoctorMainShell> {
       case 0:
         return AppBar(
           toolbarHeight: 72,
-          backgroundColor: Colors.white,
+          backgroundColor: Color(0xFF112D4E),
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF112D4E), Color(0xFF3F72AF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           elevation: 0,
           title: Row(
             children: [
@@ -108,33 +117,28 @@ class _DoctorMainShellState extends State<DoctorMainShell> {
                 children: [
                   Text('Dasbor Triase',
                       style: GoogleFonts.manrope(
-                        fontSize: 16,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF112D4E),
-                      )),
-                  Text('Pantau pasien Anda secara real-time',
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        color: const Color(0xFF5A8DA0),
+                        color: const Color(0xFFE5F0FF),
                       )),
                 ],
               ),
             ],
           ),
-          actions: const [
-            Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: CircleAvatar(
-                backgroundColor: Color(0xFFE5F0FF),
-                child: Icon(Icons.person, color: Color(0xFF112D4E)),
-              ),
-            ),
-          ],
         );
       case 1:
         return AppBar(
           toolbarHeight: 72,
-          backgroundColor: Colors.white,
+          backgroundColor: Color(0xFF112D4E),
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF112D4E), Color(0xFF3F72AF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           elevation: 0,
           title: Row(
             children: [
@@ -154,55 +158,14 @@ class _DoctorMainShellState extends State<DoctorMainShell> {
                 children: [
                   Text('Tambah Pasien',
                       style: GoogleFonts.manrope(
-                        fontSize: 16,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF112D4E),
-                      )),
-                  Text('Registrasi pasien TB baru',
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        color: const Color(0xFF5A8DA0),
+                        color: const Color(0xFFE5F0FF),
                       )),
                 ],
               ),
             ],
           ),
-        );
-      case 2:
-        return AppBar(
-          toolbarHeight: 72,
-          backgroundColor: Colors.white.withValues(alpha: 0.95),
-          surfaceTintColor: Colors.white,
-          elevation: 0,
-          title: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFFE5F0FF),
-                ),
-                child: const Icon(Icons.person_rounded,
-                    color: Color(0xFF112D4E), size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Doctor Portal',
-                style: GoogleFonts.manrope(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF112D4E),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout_rounded, color: Color(0xFFDE2C2C)),
-              onPressed: _logout,
-            ),
-          ],
         );
       default:
         return AppBar();
@@ -217,7 +180,7 @@ class _DoctorMainShellState extends State<DoctorMainShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: _buildAppBar(),
+      appBar: _currentIndex == 2 ? null : _buildAppBar(),
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
