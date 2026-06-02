@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'doctor_dashboard_page.dart';
+import 'doctor_main_shell.dart';
 
 class PatientQRPage extends StatelessWidget {
   final String patientName;
@@ -49,7 +49,7 @@ class PatientQRPage extends StatelessWidget {
             if (fromAddPatient) {
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (_) => const DoctorDashboardPage()),
+                MaterialPageRoute(builder: (_) => const DoctorMainShell()),
                 (route) => false,
               );
             } else {
@@ -260,7 +260,7 @@ class PatientQRPage extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (_) => const DoctorDashboardPage()),
+                        MaterialPageRoute(builder: (_) => const DoctorMainShell()),
                         (route) => false,
                       ),
                       style: OutlinedButton.styleFrom(
