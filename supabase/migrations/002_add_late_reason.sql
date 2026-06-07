@@ -24,13 +24,18 @@ DECLARE
   v_now TIMESTAMPTZ := NOW();
 BEGIN
   -- Upsert: insert jika belum ada, update jika sudah ada
+  -- Jika sudah ada entri dengan late_reason dan user mencoba memberikan alasan baru, tolak
+  IF EXISTS(SELECT 1 FROM medication_logs WHERE patient_id = p_patient_id AND log_date = v_today AND session = p_session AND late_reason IS NOT NULL) AND p_reason IS NOT NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Late reason sudah dicatat');
+  END IF;
+
   INSERT INTO medication_logs (patient_id, log_date, session, status, taken_at, late_reason)
   VALUES (p_patient_id, v_today, p_session, 'taken', v_now, p_reason)
   ON CONFLICT (patient_id, log_date, session)
   DO UPDATE SET
     status = 'taken',
     taken_at = v_now,
-    late_reason = COALESCE(p_reason, medication_logs.late_reason);
+    late_reason = COALESCE(medication_logs.late_reason, EXCLUDED.late_reason);
 
   RETURN jsonb_build_object('success', true);
 END;

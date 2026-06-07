@@ -123,12 +123,31 @@ class MedicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If medication was already taken, always show as completed
-    if (slot.takenAt != null) {
+    if (slot.status == MedicationStatus.late) {
+      if (slot.lateReason != null && slot.lateReason!.isNotEmpty) {
+        return _buildLateCompleted();
+      }
+
+      return _buildActionable(
+        variant: _cardVariants[MedicationStatus.late]!,
+        badge: _CornerBadge(
+          label: 'Terlambat',
+          bgColor: const Color(0xFFBA7600),
+        ),
+        button: _OutlinedButton(
+          label: 'Catat Alasan Terlambat',
+          onPressed: onLateReason,
+        ),
+      );
+    }
+
+    if (slot.status == MedicationStatus.completed || slot.takenAt != null) {
       return _buildCompleted();
     }
 
     switch (slot.status) {
+      case MedicationStatus.late:
+        return _buildLateCompleted();
       case MedicationStatus.completed:
         return _buildCompleted();
       case MedicationStatus.active:
@@ -137,18 +156,6 @@ class MedicationCard extends StatelessWidget {
           button: _FilledButton(
             label: 'Konfirmasi Minum Obat',
             onPressed: onConfirm,
-          ),
-        );
-      case MedicationStatus.late:
-        return _buildActionable(
-          variant: _cardVariants[MedicationStatus.late]!,
-          badge: _CornerBadge(
-            label: 'Terlambat',
-            bgColor: const Color(0xFFBA7600),
-          ),
-          button: _OutlinedButton(
-            label: 'Catat Alasan Terlambat',
-            onPressed: onLateReason,
           ),
         );
       case MedicationStatus.missed:
@@ -195,6 +202,49 @@ class MedicationCard extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  // ── Late completed (logged after window) ──
+  Widget _buildLateCompleted() {
+    final v = _cardVariants[MedicationStatus.late]!;
+    return _CardFrame(
+      borderColor: v.borderColor,
+      shadows: v.shadows,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _HeaderRow(label: slot.label, timeRange: slot.timeRange),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: Color(0xFFBA7600), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Terlambat diminum',
+                style: GoogleFonts.manrope(
+                  color: const Color(0xFFBA7600),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          if (slot.lateReason != null && slot.lateReason!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Alasan: ${slot.lateReason}',
+              style: GoogleFonts.manrope(
+                color: const Color(0xFF43474E),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
         ],
       ),
     );
