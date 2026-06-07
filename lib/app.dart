@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'features/auth/presentation/portal_role_screen.dart';
-import 'pages/doctor/doctor_dashboard_page.dart';
 
 class TbConnectApp extends StatelessWidget {
   const TbConnectApp({super.key});
@@ -88,9 +85,7 @@ class TbConnectApp extends StatelessWidget {
           hintStyle: const TextStyle(color: Color(0xFF74777F)),
         ),
       ),
-      home: Supabase.instance.client.auth.currentUser != null
-          ? const DoctorDashboardPage()
-          : const PortalRoleScreen(),
+      home: const PortalRoleScreen(),
     );
   }
 }
