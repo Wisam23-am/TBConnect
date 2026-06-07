@@ -9,6 +9,7 @@ enum MedicationStatus {
   active, // 'active'
   late, // 'late'
   missed, // 'missed'
+  lateLocked, // overdue and locked
   locked, // 'locked'
 }
 
@@ -113,6 +114,12 @@ class MedicationCard extends StatelessWidget {
         ),
       ],
     ),
+    MedicationStatus.lateLocked: _CardVariant(
+      accentColor: Color(0xFFC50000),
+      borderColor: Color(0xFFA60000),
+      shadows: [],
+      bgColor: Color(0xFFFFF1F1),
+    ),
     MedicationStatus.locked: _CardVariant(
       accentColor: Color(0xFF43474E),
       borderColor: Color(0xFFE1E3E4),
@@ -131,11 +138,11 @@ class MedicationCard extends StatelessWidget {
       return _buildActionable(
         variant: _cardVariants[MedicationStatus.late]!,
         badge: _CornerBadge(
-          label: 'Terlambat',
+          label: 'Terlewat',
           bgColor: const Color(0xFFBA7600),
         ),
         button: _OutlinedButton(
-          label: 'Catat Alasan Terlambat',
+          label: 'Catat Alasan Terlewat',
           onPressed: onLateReason,
         ),
       );
@@ -170,6 +177,8 @@ class MedicationCard extends StatelessWidget {
             onPressed: onConfirm,
           ),
         );
+      case MedicationStatus.lateLocked:
+        return _buildLateLocked();
       case MedicationStatus.locked:
         return _buildLocked();
     }
@@ -225,7 +234,7 @@ class MedicationCard extends StatelessWidget {
                   color: Color(0xFFBA7600), size: 20),
               const SizedBox(width: 8),
               Text(
-                'Terlambat diminum',
+                'Terlewat diminum',
                 style: GoogleFonts.manrope(
                   color: const Color(0xFFBA7600),
                   fontSize: 16,
@@ -330,6 +339,39 @@ class MedicationCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ── Late locked (overdue and no longer actionable) ──
+  Widget _buildLateLocked() {
+    final v = _cardVariants[MedicationStatus.lateLocked]!;
+    return _CardFrame(
+      borderColor: v.borderColor,
+      shadows: v.shadows,
+      bgColor: v.bgColor,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _HeaderRow(label: slot.label, timeRange: slot.timeRange),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: Color(0xFFC50000), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Terlewat',
+                style: GoogleFonts.manrope(
+                  color: const Color(0xFFC50000),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

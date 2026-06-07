@@ -47,7 +47,20 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
   }
 
   String _formatDate(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
+    ];
     return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
   }
 
@@ -56,7 +69,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
     if (logs is! List) return [];
     final selectedDateStr = _selectedDate.toIso8601String().split('T').first;
     return logs
-        .where((l) => (l['log_date'] as String?)?.startsWith(selectedDateStr) == true)
+        .where((l) =>
+            (l['log_date'] as String?)?.startsWith(selectedDateStr) == true)
         .map((l) => Map<String, dynamic>.from(l as Map))
         .toList();
   }
@@ -64,7 +78,9 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
   int get _totalDosesForDate => 3;
   int get _takenDosesForDate {
     final logs = _dateMedicationLogs();
-    return logs.where((l) => l['status'] == 'taken' || l['status'] == 'late').length;
+    return logs
+        .where((l) => l['status'] == 'taken' || l['status'] == 'late')
+        .length;
   }
 
   double get _adherencePercent {
@@ -74,37 +90,53 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
 
   String _medSessionIcon(String session) {
     switch (session) {
-      case 'morning': return '🌅';
-      case 'afternoon': return '☀️';
-      case 'evening': return '🌙';
-      default: return '💊';
+      case 'morning':
+        return '🌅';
+      case 'afternoon':
+        return '☀️';
+      case 'evening':
+        return '🌙';
+      default:
+        return '💊';
     }
   }
 
   String _medSessionLabel(String session) {
     switch (session) {
-      case 'morning': return 'Pagi';
-      case 'afternoon': return 'Siang';
-      case 'evening': return 'Malam';
-      default: return session;
+      case 'morning':
+        return 'Pagi';
+      case 'afternoon':
+        return 'Siang';
+      case 'evening':
+        return 'Malam';
+      default:
+        return session;
     }
   }
 
   Color _statusColor(String? status) {
     switch (status) {
-      case 'taken': return const Color(0xFF2E7D32);
-      case 'late': return const Color(0xFFE19200);
-      case 'missed': return const Color(0xFFC50000);
-      default: return const Color(0xFF43474E);
+      case 'taken':
+        return const Color(0xFF2E7D32);
+      case 'late':
+        return const Color(0xFFE19200);
+      case 'missed':
+        return const Color(0xFFC50000);
+      default:
+        return const Color(0xFF43474E);
     }
   }
 
   String _statusLabel(String? status) {
     switch (status) {
-      case 'taken': return 'Diminum';
-      case 'late': return 'Terlambat';
-      case 'missed': return 'Terlewat';
-      default: return 'Menunggu';
+      case 'taken':
+        return 'Diminum';
+      case 'late':
+        return 'Terlambat';
+      case 'missed':
+        return 'Terlewat';
+      default:
+        return 'Menunggu';
     }
   }
 
@@ -113,7 +145,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F5F9),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF112D4E)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF112D4E)))
           : _patientData == null
               ? Center(
                   child: Text(
@@ -128,7 +161,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                       _buildSliverAppBar(),
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -153,7 +187,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
   }
 
   Widget _buildSliverAppBar() {
-    final gender = _patientData!['gender'] == 'male' ? 'Laki-laki' : 'Perempuan';
+    final gender =
+        _patientData!['gender'] == 'male' ? 'Laki-laki' : 'Perempuan';
     final age = _patientData!['age'] ?? '-';
     final nik = _patientData!['nik'] ?? '-';
     final initWeight = _patientData!['initial_weight_kg'] ?? '-';
@@ -190,9 +225,11 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 3),
+                      border: Border.all(
+                          color: Colors.white.withOpacity(0.5), width: 3),
                       image: DecorationImage(
-                        image: NetworkImage("https://ui-avatars.com/api/?name=$encodedName&background=DBE2EF&color=112D4E&size=128"),
+                        image: NetworkImage(
+                            "https://ui-avatars.com/api/?name=$encodedName&background=DBE2EF&color=112D4E&size=128"),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -210,7 +247,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
@@ -265,8 +303,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
   Widget _buildGlobalDateSelector() {
     final now = DateTime.now();
     final isToday = _selectedDate.day == now.day &&
-                    _selectedDate.month == now.month &&
-                    _selectedDate.year == now.year;
+        _selectedDate.month == now.month &&
+        _selectedDate.year == now.year;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -274,7 +312,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(color: Color(0x0A112D4E), blurRadius: 15, offset: Offset(0, 4)),
+          BoxShadow(
+              color: Color(0x0A112D4E), blurRadius: 15, offset: Offset(0, 4)),
         ],
       ),
       child: Row(
@@ -293,7 +332,9 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
               ),
               const SizedBox(height: 4),
               Text(
-                isToday ? 'Hari Ini (${_formatDate(_selectedDate)})' : _formatDate(_selectedDate),
+                isToday
+                    ? 'Hari Ini (${_formatDate(_selectedDate)})'
+                    : _formatDate(_selectedDate),
                 style: GoogleFonts.manrope(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -310,7 +351,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
               backgroundColor: const Color(0xFFE5F0FF),
               foregroundColor: const Color(0xFF112D4E),
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ],
@@ -354,7 +396,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: Color(0x05112D4E), blurRadius: 20, offset: Offset(0, 4)),
+          BoxShadow(
+              color: Color(0x05112D4E), blurRadius: 20, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -364,14 +407,20 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: const Color(0xFFE5F0FF), borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.medication, color: Color(0xFF3F72AF), size: 20),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFE5F0FF),
+                    borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.medication,
+                    color: Color(0xFF3F72AF), size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Kepatuhan Obat',
-                  style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 18, color: const Color(0xFF112D4E)),
+                  style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: const Color(0xFF112D4E)),
                 ),
               ),
             ],
@@ -386,11 +435,15 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                   fit: StackFit.expand,
                   children: [
                     CircularProgressIndicator(
-                      value: _totalDosesForDate > 0 ? (_takenDosesForDate / _totalDosesForDate) : 0,
+                      value: _totalDosesForDate > 0
+                          ? (_takenDosesForDate / _totalDosesForDate)
+                          : 0,
                       strokeWidth: 8,
                       backgroundColor: const Color(0xFFEDEEEF),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        _adherencePercent >= 66 ? const Color(0xFF2E7D32) : const Color(0xFFE19200),
+                        _adherencePercent >= 66
+                            ? const Color(0xFF2E7D32)
+                            : const Color(0xFFE19200),
                       ),
                     ),
                     Center(
@@ -413,12 +466,16 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                   children: [
                     Text(
                       'Telah diminum:',
-                      style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF5A8DA0)),
+                      style: GoogleFonts.manrope(
+                          fontSize: 13, color: const Color(0xFF5A8DA0)),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '$_takenDosesForDate dari $_totalDosesForDate dosis',
-                      style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF112D4E)),
+                      style: GoogleFonts.manrope(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF112D4E)),
                     ),
                   ],
                 ),
@@ -438,14 +495,16 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
     );
   }
 
-  Widget _buildMedicationSessionTile(String session, Map<String, dynamic>? log) {
-    final status = log?['status'] as String?;
+  Widget _buildMedicationSessionTile(
+      String session, Map<String, dynamic>? log) {
+    final rawStatus = log?['status'] as String?;
+    final status = _inferMedicationStatus(session, rawStatus);
     final takenAt = log?['taken_at'] as String?;
     final reason = log?['late_reason'] as String?;
-    
+
     Color bgColor = const Color(0xFFF8F9FA);
     Color borderColor = const Color(0xFFE1E3E4);
-    
+
     if (status == 'taken') {
       bgColor = const Color(0xFFF2F9F3);
       borderColor = const Color(0xFF81C784).withOpacity(0.5);
@@ -473,9 +532,12 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)],
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)
+              ],
             ),
-            child: Text(_medSessionIcon(session), style: const TextStyle(fontSize: 20)),
+            child: Text(_medSessionIcon(session),
+                style: const TextStyle(fontSize: 20)),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -484,19 +546,28 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
               children: [
                 Text(
                   _medSessionLabel(session),
-                  style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 15, color: const Color(0xFF112D4E)),
+                  style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: const Color(0xFF112D4E)),
                 ),
                 if (takenAt != null)
                   Text(
                     '⏱ ${takenAt.substring(11, 19)}',
-                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF5A8DA0)),
+                    style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF5A8DA0)),
                   ),
                 if (reason != null && reason.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       'Alasan: $reason',
-                      style: GoogleFonts.manrope(fontSize: 12, fontStyle: FontStyle.italic, color: const Color(0xFFBA7600)),
+                      style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: const Color(0xFFBA7600)),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -512,12 +583,65 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             ),
             child: Text(
               _statusLabel(status),
-              style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 12, color: _statusColor(status)),
+              style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  color: _statusColor(status)),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String? _inferMedicationStatus(String session, String? rawStatus) {
+    if (rawStatus != null && rawStatus.isNotEmpty) return rawStatus;
+
+    final selectedDay =
+        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    if (selectedDay.isAfter(today)) {
+      return null;
+    }
+
+    if (selectedDay.isBefore(today)) {
+      return 'missed';
+    }
+
+    final sessionEnd = _sessionEnd(selectedDay, session);
+    if (now.isAfter(sessionEnd)) {
+      return 'missed';
+    }
+
+    return null;
+  }
+
+  DateTime _sessionStart(DateTime date, String session) {
+    switch (session) {
+      case 'morning':
+        return DateTime(date.year, date.month, date.day, 6, 0);
+      case 'afternoon':
+        return DateTime(date.year, date.month, date.day, 13, 0);
+      case 'evening':
+        return DateTime(date.year, date.month, date.day, 18, 0);
+      default:
+        return DateTime(date.year, date.month, date.day);
+    }
+  }
+
+  DateTime _sessionEnd(DateTime date, String session) {
+    switch (session) {
+      case 'morning':
+        return DateTime(date.year, date.month, date.day, 9, 0);
+      case 'afternoon':
+        return DateTime(date.year, date.month, date.day, 15, 0);
+      case 'evening':
+        return DateTime(date.year, date.month, date.day, 21, 0);
+      default:
+        return DateTime(date.year, date.month, date.day, 23, 59, 59);
+    }
   }
 
   Widget _buildWeightSection() {
@@ -532,7 +656,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: Color(0x05112D4E), blurRadius: 20, offset: Offset(0, 4)),
+          BoxShadow(
+              color: Color(0x05112D4E), blurRadius: 20, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -542,8 +667,11 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.monitor_weight_outlined, color: Color(0xFF2E7D32), size: 20),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.monitor_weight_outlined,
+                    color: Color(0xFF2E7D32), size: 20),
               ),
               const SizedBox(width: 12),
               Text(
@@ -576,7 +704,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                 itemBuilder: (context, index) {
                   final log = weightLogs[index];
                   final dateStr = log['log_date'] as String? ?? '';
-                  final date = dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
+                  final date =
+                      dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
                   final wt = log['weight_kg'];
                   return Container(
                     width: 110,
@@ -630,15 +759,18 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
 
     final selectedDateStr = _selectedDate.toIso8601String().split('T').first;
     final filteredSymptomLogs = allSymptomLogs
-        .where((l) => (l['log_date'] as String?)?.startsWith(selectedDateStr) == true)
+        .where((l) =>
+            (l['log_date'] as String?)?.startsWith(selectedDateStr) == true)
         .toList();
     final filteredDailyReports = allDailyReports
-        .where((r) => (r['report_date'] as String?)?.startsWith(selectedDateStr) == true)
+        .where((r) =>
+            (r['report_date'] as String?)?.startsWith(selectedDateStr) == true)
         .toList();
 
-    final hasEmergency =
-        filteredSymptomLogs.any((l) => l['is_emergency'] == true) ||
-        filteredDailyReports.any((r) => (r['emergency_symptoms'] as List?)?.isNotEmpty == true);
+    final hasEmergency = filteredSymptomLogs
+            .any((l) => l['is_emergency'] == true) ||
+        filteredDailyReports
+            .any((r) => (r['emergency_symptoms'] as List?)?.isNotEmpty == true);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -663,8 +795,11 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: const Color(0xFFFFF4E5), borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.health_and_safety_outlined, color: Color(0xFFE19200), size: 20),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFFFFF4E5),
+                        borderRadius: BorderRadius.circular(10)),
+                    child: const Icon(Icons.health_and_safety_outlined,
+                        color: Color(0xFFE19200), size: 20),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -679,7 +814,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
               ),
               if (hasEmergency)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.redAccent.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -696,7 +832,6 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             ],
           ),
           const SizedBox(height: 20),
-
           if (filteredSymptomLogs.isEmpty && filteredDailyReports.isEmpty)
             Container(
               width: double.infinity,
@@ -708,7 +843,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
               ),
               child: Column(
                 children: [
-                  const Icon(Icons.sentiment_satisfied_alt, color: Color(0xFFC4C6CF), size: 40),
+                  const Icon(Icons.sentiment_satisfied_alt,
+                      color: Color(0xFFC4C6CF), size: 40),
                   const SizedBox(height: 12),
                   Text(
                     'Tidak ada laporan gejala pada tanggal ini.',
@@ -725,16 +861,16 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
           else ...[
             if (filteredDailyReports.isNotEmpty) ...[
               ...filteredDailyReports.map((r) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildDailySymptomReportCard(r),
-              )),
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildDailySymptomReportCard(r),
+                  )),
             ],
             if (filteredSymptomLogs.isNotEmpty) ...[
               if (filteredDailyReports.isNotEmpty) const SizedBox(height: 12),
               ...filteredSymptomLogs.map((l) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildSymptomCard(l),
-              )),
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildSymptomCard(l),
+                  )),
             ],
           ],
         ],
@@ -763,7 +899,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
   Widget _buildDailySymptomReportCard(Map<String, dynamic> report) {
     final moodLevel = report['mood_level'] as String? ?? '';
     final symptoms = (report['symptoms'] as List?)?.cast<String>() ?? [];
-    final emergencySymptoms = (report['emergency_symptoms'] as List?)?.cast<String>() ?? [];
+    final emergencySymptoms =
+        (report['emergency_symptoms'] as List?)?.cast<String>() ?? [];
     final notes = report['notes'] as String?;
 
     final moodLabels = {
@@ -794,7 +931,9 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFDBE2EF)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -803,11 +942,13 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: moodColor.withOpacity(0.1),
-              borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+              borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16), topRight: Radius.circular(16)),
             ),
             child: Row(
               children: [
-                Text(moodIcons[moodLevel] ?? '😐', style: const TextStyle(fontSize: 20)),
+                Text(moodIcons[moodLevel] ?? '😐',
+                    style: const TextStyle(fontSize: 20)),
                 const SizedBox(width: 12),
                 Text(
                   'Perasaan: ${moodLabels[moodLevel] ?? moodLevel}',
@@ -826,22 +967,38 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (symptoms.isNotEmpty) ...[
-                  Text('Gejala Terdeteksi', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF5A8DA0))),
+                  Text('Gejala Terdeteksi',
+                      style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF5A8DA0))),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: symptoms.map((s) => _buildModernTag(s, const Color(0xFFE5F0FF), const Color(0xFF112D4E))).toList(),
+                    children: symptoms
+                        .map((s) => _buildModernTag(s, const Color(0xFFE5F0FF),
+                            const Color(0xFF112D4E)))
+                        .toList(),
                   ),
                   const SizedBox(height: 16),
                 ],
                 if (emergencySymptoms.isNotEmpty) ...[
-                  Text('Gejala Darurat', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.redAccent)),
+                  Text('Gejala Darurat',
+                      style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.redAccent)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: emergencySymptoms.map((s) => _buildModernTag(s, Colors.redAccent.withOpacity(0.1), Colors.redAccent)).toList(),
+                    children: emergencySymptoms
+                        .map((s) => _buildModernTag(
+                            s,
+                            Colors.redAccent.withOpacity(0.1),
+                            Colors.redAccent))
+                        .toList(),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -857,7 +1014,11 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Catatan Pasien:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF5A8DA0))),
+                        Text('Catatan Pasien:',
+                            style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF5A8DA0))),
                         const SizedBox(height: 4),
                         Text(
                           notes,
@@ -871,10 +1032,15 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                     ),
                   ),
                 ],
-                if (symptoms.isEmpty && emergencySymptoms.isEmpty && (notes == null || notes.isEmpty))
+                if (symptoms.isEmpty &&
+                    emergencySymptoms.isEmpty &&
+                    (notes == null || notes.isEmpty))
                   Text(
                     'Hanya melaporkan perasaan.',
-                    style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF5A8DA0), fontStyle: FontStyle.italic),
+                    style: GoogleFonts.manrope(
+                        fontSize: 13,
+                        color: const Color(0xFF5A8DA0),
+                        fontStyle: FontStyle.italic),
                   ),
               ],
             ),
@@ -894,7 +1060,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
 
     final symptoms = <String>[];
     if (nausea is int && nausea > 0) symptoms.add('Mual ($nausea/3)');
-    if (dizziness is int && dizziness > 0) symptoms.add('Pusing ($dizziness/3)');
+    if (dizziness is int && dizziness > 0)
+      symptoms.add('Pusing ($dizziness/3)');
     if (fatigue is int && fatigue > 0) symptoms.add('Lelah ($fatigue/3)');
     if (hemoptysis) symptoms.add('Batuk Darah');
     if (chestPain) symptoms.add('Nyeri Dada');
@@ -912,7 +1079,10 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         children: [
           Text(
             'Laporan Gejala Tambahan',
-            style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF5A8DA0)),
+            style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF5A8DA0)),
           ),
           const SizedBox(height: 8),
           if (symptoms.isEmpty)
@@ -929,7 +1099,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
               spacing: 8,
               runSpacing: 8,
               children: symptoms
-                  .map((s) => _buildModernTag(s, const Color(0xFFEFF6FF), const Color(0xFF1D4ED8)))
+                  .map((s) => _buildModernTag(
+                      s, const Color(0xFFEFF6FF), const Color(0xFF1D4ED8)))
                   .toList(),
             ),
         ],
@@ -958,8 +1129,11 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: const Color(0xFFE5F0FF), borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.info_outline, color: Color(0xFF3F72AF), size: 20),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFE5F0FF),
+                    borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.info_outline,
+                    color: Color(0xFF3F72AF), size: 20),
               ),
               const SizedBox(width: 12),
               Text(
@@ -973,15 +1147,20 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             ],
           ),
           const SizedBox(height: 20),
-          _infoRow(Icons.local_hospital_outlined, 'Faskes', _patientData!['faskes_name'] ?? '-'),
+          _infoRow(Icons.local_hospital_outlined, 'Faskes',
+              _patientData!['faskes_name'] ?? '-'),
           const Divider(color: Color(0xFFF3F5F9), height: 24),
-          _infoRow(Icons.location_on_outlined, 'Alamat', _patientData!['address'] ?? '-'),
+          _infoRow(Icons.location_on_outlined, 'Alamat',
+              _patientData!['address'] ?? '-'),
           const Divider(color: Color(0xFFF3F5F9), height: 24),
-          _infoRow(Icons.phone_outlined, 'No. Telepon', _patientData!['phone_number'] ?? '-'),
+          _infoRow(Icons.phone_outlined, 'No. Telepon',
+              _patientData!['phone_number'] ?? '-'),
           const Divider(color: Color(0xFFF3F5F9), height: 24),
-          _infoRow(Icons.verified_user_outlined, 'Status', _patientData!['status'] ?? '-'),
+          _infoRow(Icons.verified_user_outlined, 'Status',
+              _patientData!['status'] ?? '-'),
           const Divider(color: Color(0xFFF3F5F9), height: 24),
-          _infoRow(Icons.event_available_outlined, 'Mulai Berobat', _patientData!['treatment_start_date'] ?? '-'),
+          _infoRow(Icons.event_available_outlined, 'Mulai Berobat',
+              _patientData!['treatment_start_date'] ?? '-'),
         ],
       ),
     );
