@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/notification_realtime_service.dart';
 import '../../../services/patient_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../auth/presentation/portal_role_screen.dart';
 import 'patient_control_schedule_page.dart';
 import 'patient_notification_page.dart';
@@ -75,7 +76,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
       await _fetchMedicationSchedule(session.patientId, _viewedDateOffset);
 
       // Load control schedule visits
-      final visits = await _patientService.getClinicVisits(patientId: session.patientId);
+      final visits =
+          await _patientService.getClinicVisits(patientId: session.patientId);
 
       Map<String, dynamic>? nextVisit;
       if (visits.isNotEmpty) {
@@ -127,31 +129,65 @@ class _PatientHomePageState extends State<PatientHomePage> {
       patientId: patientId,
       date: targetDate,
     );
-    
+
     final logs = List<Map<String, dynamic>>.from(medResult['sessions'] ?? []);
 
     // Map DB logs to UI slots
     List<MedicationSlot> slots = [];
     for (var s in logs) {
       final session = s['session'] as String? ?? '';
-      
+
       MedicationStatus status = MedicationStatus.locked;
       final statusStr = s['status'] as String? ?? 'locked';
-      if (statusStr == 'taken') status = MedicationStatus.completed;
-      else if (statusStr == 'active') status = MedicationStatus.active;
-      else if (statusStr == 'late') status = MedicationStatus.late;
-      else if (statusStr == 'missed') status = MedicationStatus.missed;
-      else status = MedicationStatus.locked;
+      if (statusStr == 'taken')
+        status = MedicationStatus.completed;
+      else if (statusStr == 'active')
+        status = MedicationStatus.active;
+      else if (statusStr == 'late')
+        status = MedicationStatus.late;
+      else if (statusStr == 'missed')
+        status = MedicationStatus.missed;
+      else
+        status = MedicationStatus.locked;
 
       slots.add(MedicationSlot(
         session: session,
         label: s['label'] as String? ?? '',
         timeRange: s['window'] as String? ?? '',
-        medications: ['Isoniazid, Rifampicin, Pyrazinamide', 'Ethambutol (Total 4 Tablet)'],
+        medications: [
+          'Isoniazid, Rifampicin, Pyrazinamide',
+          'Ethambutol (Total 4 Tablet)'
+        ],
         status: status,
-        takenAt: s['taken_at'] != null ? DateTime.tryParse(s['taken_at']) : null,
+        takenAt:
+            s['taken_at'] != null ? DateTime.tryParse(s['taken_at']) : null,
         lateReason: s['late_reason'] as String?,
       ));
+    }
+
+    // If user had previously recorded a late reason locally (prefs) but server
+    // hasn't persisted it yet, show a placeholder so the UI hides the button.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (var i = 0; i < slots.length; i++) {
+        final s = slots[i];
+        final key =
+            'late_reason_recorded:${patientId}:${targetDate.toIso8601String().split('T').first}:${s.session}';
+        if ((s.lateReason == null || s.lateReason!.isEmpty) &&
+            prefs.getBool(key) == true) {
+          slots[i] = MedicationSlot(
+            session: s.session,
+            label: s.label,
+            timeRange: s.timeRange,
+            medications: s.medications,
+            status: MedicationStatus.late,
+            takenAt: s.takenAt,
+            lateReason: 'Alasan telah dikirim',
+          );
+        }
+      }
+    } catch (e) {
+      // ignore prefs errors
     }
 
     setState(() {
@@ -244,6 +280,12 @@ class _PatientHomePageState extends State<PatientHomePage> {
     return months > 6 ? '6' : months.toString();
   }
 
+  DateTime _viewedTargetDate() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day)
+        .add(Duration(days: _viewedDateOffset));
+  }
+
   // --- Handlers ---
 
   void _redirectToLogin() {
@@ -275,11 +317,11 @@ class _PatientHomePageState extends State<PatientHomePage> {
   Future<void> _handleConfirmMedication(MedicationSlot slot) async {
     if (_session == null) return;
     try {
-      final now = DateTime.now();
+      final logDate = _viewedTargetDate();
 
       await _patientService.logMedication(
         patientId: _session!.patientId,
-        date: now,
+        date: logDate,
         session: slot.session,
       );
 
@@ -292,6 +334,51 @@ class _PatientHomePageState extends State<PatientHomePage> {
   }
 
   Future<void> _handleLateMedication(MedicationSlot slot) async {
+    if (_session == null) return;
+
+    final logDate = _viewedTargetDate();
+
+    // 1) Check server-side status (best effort). If RPC fails, we proceed to check local cache.
+    bool serverHasReason = false;
+    try {
+      final serverData = await _patientService.getTodayMedications(
+        patientId: _session!.patientId,
+        date: logDate,
+      );
+      final sessions =
+          List<Map<String, dynamic>>.from(serverData['sessions'] ?? []);
+      final matched = sessions.firstWhere(
+        (s) => (s['session'] as String? ?? '') == slot.session,
+        orElse: () => {},
+      );
+      if (matched.isNotEmpty) {
+        final late = matched['late_reason'] as String?;
+        if (late != null && late.isNotEmpty) serverHasReason = true;
+      }
+    } catch (e) {
+      // ignore - RPC may be missing or network error; we'll fall back to local check
+      print('Warning: server check for late reason failed: $e');
+    }
+
+    if (serverHasReason) {
+      _showSnackBar('Alasan terlambat sudah tercatat di server.',
+          const Color(0xFF616161));
+      // Refresh to show server state
+      _fetchMedicationSchedule(_session!.patientId, _viewedDateOffset);
+      return;
+    }
+
+    // 2) Check local persistent cache to avoid double-entry across restarts
+    final prefs = await SharedPreferences.getInstance();
+    final key =
+        'late_reason_recorded:${_session!.patientId}:${logDate.toIso8601String().split('T').first}:${slot.session}';
+    if (prefs.getBool(key) == true) {
+      _showSnackBar('Alasan terlambat sudah dicatat sebelumnya (lokal).',
+          const Color(0xFF616161));
+      return;
+    }
+
+    // 3) Prompt user for reason
     final reasonController = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
@@ -317,16 +404,17 @@ class _PatientHomePageState extends State<PatientHomePage> {
       ),
     );
 
-    if (reason != null && reason.isNotEmpty && _session != null) {
+    if (reason != null && reason.isNotEmpty) {
       try {
-        final now = DateTime.now();
-
         await _patientService.logMedication(
           patientId: _session!.patientId,
-          date: now,
+          date: logDate,
           session: slot.session,
           reason: reason,
         );
+
+        // mark local cache so user can't re-enter even if server migration not applied yet
+        await prefs.setBool(key, true);
 
         _showSnackBar(
             '✅ Obat dicatat dengan alasan terlambat.', const Color(0xFF2E7D32));
@@ -352,8 +440,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        body: Center(
-            child: CircularProgressIndicator(color: Color(0xFF112D4E))),
+        body:
+            Center(child: CircularProgressIndicator(color: Color(0xFF112D4E))),
       );
     }
 
@@ -406,7 +494,6 @@ class _PatientHomePageState extends State<PatientHomePage> {
                 name: name,
                 realtimeService: _realtimeService,
               ),
-
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -433,8 +520,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
                               _nextControlVisit!['scheduled_date']),
                           formattedDate: _formatDate(DateTime.parse(
                               _nextControlVisit!['scheduled_date'])),
-                          location:
-                              _nextControlVisit!['location'] ?? 'Fasilitas Kesehatan',
+                          location: _nextControlVisit!['location'] ??
+                              'Fasilitas Kesehatan',
                         ),
                       ),
                       const SizedBox(height: 16),

@@ -61,11 +61,18 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Obat sudah dicatat pada tanggal tersebut');
   END IF;
 
+  -- Jika ada existing dan sudah memiliki late_reason, jangan izinkan mengubahnya lagi
+  IF FOUND AND v_existing.late_reason IS NOT NULL AND p_reason IS NOT NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Late reason sudah dicatat');
+  END IF;
+
   -- Upsert log
   INSERT INTO public.medication_logs (patient_id, log_date, session, status, taken_at, late_reason)
   VALUES (p_patient_id, v_target_date, p_session, v_status, NOW(), p_reason)
   ON CONFLICT (patient_id, log_date, session)
-  DO UPDATE SET status = EXCLUDED.status, taken_at = EXCLUDED.taken_at, late_reason = EXCLUDED.late_reason;
+  DO UPDATE SET status = EXCLUDED.status,
+                taken_at = EXCLUDED.taken_at,
+                late_reason = COALESCE(public.medication_logs.late_reason, EXCLUDED.late_reason);
 
   RETURN jsonb_build_object('success', true, 'status', v_status, 'log_date', v_target_date);
 END;
