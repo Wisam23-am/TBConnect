@@ -7,7 +7,6 @@ import '../../../services/patient_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../auth/presentation/portal_role_screen.dart';
 import 'patient_control_schedule_page.dart';
-import 'patient_notification_page.dart';
 import 'patient_weight_input_page.dart';
 import 'widgets/patient_home_header.dart';
 import 'widgets/patient_schedule_header.dart';
@@ -481,103 +480,104 @@ class _PatientHomePageState extends State<PatientHomePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      body: RefreshIndicator(
-        onRefresh: _loadAllData,
-        color: const Color(0xFF112D4E),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 100), // padding for bottom nav
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              PatientHomeHeader(
-                name: name,
-                realtimeService: _realtimeService,
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // --- Progress Card ---
-                    PatientProgressCard(treatmentMonth: currentMonth),
-                    const SizedBox(height: 16),
+      body: Column(
+        children: [
+          PatientHomeHeader(
+            name: name,
+            realtimeService: _realtimeService,
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadAllData,
+              color: const Color(0xFF112D4E),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 100), // padding for bottom nav
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // --- Progress Card ---
+                      PatientProgressCard(treatmentMonth: currentMonth),
+                      const SizedBox(height: 16),
 
-                    // --- Control Reminder Card (jika ada) ---
-                    if (_nextControlVisit != null) ...[
-                      GestureDetector(
-                        onTap: () {
+                      // --- Control Reminder Card (jika ada) ---
+                      if (_nextControlVisit != null) ...[
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      const PatientControlSchedulePage()),
+                            ).then((_) => _loadAllData()); // refresh on return
+                          },
+                          child: PatientControlReminderCard(
+                            scheduledDate: DateTime.parse(
+                                _nextControlVisit!['scheduled_date']),
+                            formattedDate: _formatDate(DateTime.parse(
+                                _nextControlVisit!['scheduled_date'])),
+                            location: _nextControlVisit!['location'] ??
+                                'Fasilitas Kesehatan',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // --- Weight Input Card ---
+                      PatientWeightCard(
+                        onInputTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) =>
-                                    const PatientControlSchedulePage()),
-                          ).then((_) => _loadAllData()); // refresh on return
+                                builder: (_) => const PatientWeightInputPage()),
+                          );
                         },
-                        child: PatientControlReminderCard(
-                          scheduledDate: DateTime.parse(
-                              _nextControlVisit!['scheduled_date']),
-                          formattedDate: _formatDate(DateTime.parse(
-                              _nextControlVisit!['scheduled_date'])),
-                          location: _nextControlVisit!['location'] ??
-                              'Fasilitas Kesehatan',
-                        ),
                       ),
+
+                      const SizedBox(height: 32),
+
+                      // --- Jadwal Minum Obat Header ---
+                      PatientScheduleHeader(
+                        isToday: _viewedDateOffset == 0,
+                        isMaxPast: _viewedDateOffset <= -2,
+                        formattedDate: dateString,
+                        onPrevious: _handlePreviousDay,
+                        onNext: _handleNextDay,
+                      ),
+
                       const SizedBox(height: 16),
-                    ],
 
-                    // --- Weight Input Card ---
-                    PatientWeightCard(
-                      onInputTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const PatientWeightInputPage()),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // --- Jadwal Minum Obat Header ---
-                    PatientScheduleHeader(
-                      isToday: _viewedDateOffset == 0,
-                      isMaxPast: _viewedDateOffset <= -2,
-                      formattedDate: dateString,
-                      onPrevious: _handlePreviousDay,
-                      onNext: _handleNextDay,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // --- Medication List ---
-                    if (_medicationSchedule.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Text(
-                            'Tidak ada jadwal obat untuk hari ini.',
-                            style: GoogleFonts.manrope(
-                                color: const Color(0xFF64748B)),
-                          ),
-                        ),
-                      )
-                    else
-                      ..._medicationSchedule.map((slot) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: MedicationCard(
-                              slot: slot,
-                              onConfirm: () => _handleConfirmMedication(slot),
-                              onLateReason: () => _handleLateMedication(slot),
+                      // --- Medication List ---
+                      if (_medicationSchedule.isEmpty)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: Text(
+                              'Tidak ada jadwal obat untuk hari ini.',
+                              style: GoogleFonts.manrope(
+                                  color: const Color(0xFF64748B)),
                             ),
-                          )),
-                  ],
+                          ),
+                        )
+                      else
+                        ..._medicationSchedule.map((slot) => Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: MedicationCard(
+                                slot: slot,
+                                onConfirm: () => _handleConfirmMedication(slot),
+                                onLateReason: () => _handleLateMedication(slot),
+                              ),
+                            )),
+                    ],
+                  ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
