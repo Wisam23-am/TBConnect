@@ -131,7 +131,11 @@ class _PatientHomePageState extends State<PatientHomePage> {
 
     final logs = List<Map<String, dynamic>>.from(medResult['sessions'] ?? []);
 
-    // Map DB logs to UI slots
+    // Map DB logs to UI slots and normalize today-specific status thresholds.
+    final isToday = targetDate.year == now.year &&
+        targetDate.month == now.month &&
+        targetDate.day == now.day;
+
     List<MedicationSlot> slots = [];
     for (var s in logs) {
       final session = s['session'] as String? ?? '';
@@ -149,6 +153,16 @@ class _PatientHomePageState extends State<PatientHomePage> {
       else
         status = MedicationStatus.locked;
 
+      final lateReason = s['late_reason'] as String?;
+      if (isToday && status != MedicationStatus.completed) {
+        status = _resolveTodayMedicationStatus(
+          session: session,
+          rawStatus: status,
+          lateReason: lateReason,
+          now: now,
+        );
+      }
+
       slots.add(MedicationSlot(
         session: session,
         label: s['label'] as String? ?? '',
@@ -160,7 +174,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
         status: status,
         takenAt:
             s['taken_at'] != null ? DateTime.tryParse(s['taken_at']) : null,
-        lateReason: s['late_reason'] as String?,
+        lateReason: lateReason,
       ));
     }
 
@@ -214,7 +228,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
       case 'morning':
         return '06:00 - 09:00';
       case 'afternoon':
-        return '12:00 - 15:00';
+        return '13:00 - 15:00';
       case 'evening':
         return '18:00 - 21:00';
       default:
@@ -236,22 +250,87 @@ class _PatientHomePageState extends State<PatientHomePage> {
   }
 
   MedicationStatus _calculateStatusForToday(String session) {
-    final hour = DateTime.now().hour;
-    // Simple mock logic for today's status based on current time
-    if (session == 'morning') {
-      if (hour < 6) return MedicationStatus.locked;
-      if (hour > 10) return MedicationStatus.late; // Past tolerance
-      return MedicationStatus.active;
-    } else if (session == 'afternoon') {
-      if (hour < 12) return MedicationStatus.locked;
-      if (hour > 16) return MedicationStatus.late;
-      return MedicationStatus.active;
-    } else if (session == 'evening') {
-      if (hour < 18) return MedicationStatus.locked;
-      if (hour > 22) return MedicationStatus.late;
+    final now = DateTime.now();
+    return _resolveTodayMedicationStatus(
+      session: session,
+      rawStatus: MedicationStatus.locked,
+      lateReason: null,
+      now: now,
+    );
+  }
+
+  MedicationStatus _resolveTodayMedicationStatus({
+    required String session,
+    required MedicationStatus rawStatus,
+    required String? lateReason,
+    required DateTime now,
+  }) {
+    // Keep completed state exact.
+    if (rawStatus == MedicationStatus.completed)
+      return MedicationStatus.completed;
+    // If server already knows the slot is truly late with a recorded reason,
+    // preserve the yellow late state.
+    if (rawStatus == MedicationStatus.late &&
+        lateReason != null &&
+        lateReason.isNotEmpty) return MedicationStatus.late;
+
+    final targetDate = DateTime(now.year, now.month, now.day);
+    final start = _sessionStart(targetDate, session);
+    final end = _sessionEnd(targetDate, session);
+    final nextStart = _nextSessionStart(targetDate, session);
+
+    if (now.isBefore(start)) {
+      return MedicationStatus.locked;
+    }
+
+    if (!now.isAfter(end)) {
       return MedicationStatus.active;
     }
-    return MedicationStatus.active;
+
+    if (now.isBefore(nextStart)) {
+      return MedicationStatus.missed;
+    }
+
+    return MedicationStatus.locked;
+  }
+
+  DateTime _sessionStart(DateTime date, String session) {
+    switch (session) {
+      case 'morning':
+        return DateTime(date.year, date.month, date.day, 6, 0);
+      case 'afternoon':
+        return DateTime(date.year, date.month, date.day, 13, 0);
+      case 'evening':
+        return DateTime(date.year, date.month, date.day, 18, 0);
+      default:
+        return DateTime(date.year, date.month, date.day);
+    }
+  }
+
+  DateTime _sessionEnd(DateTime date, String session) {
+    switch (session) {
+      case 'morning':
+        return DateTime(date.year, date.month, date.day, 9, 0);
+      case 'afternoon':
+        return DateTime(date.year, date.month, date.day, 15, 0);
+      case 'evening':
+        return DateTime(date.year, date.month, date.day, 21, 0);
+      default:
+        return DateTime(date.year, date.month, date.day, 23, 59, 59);
+    }
+  }
+
+  DateTime _nextSessionStart(DateTime date, String session) {
+    switch (session) {
+      case 'morning':
+        return DateTime(date.year, date.month, date.day, 13, 0);
+      case 'afternoon':
+        return DateTime(date.year, date.month, date.day, 18, 0);
+      case 'evening':
+        return DateTime(date.year, date.month, date.day + 1, 6, 0);
+      default:
+        return DateTime(date.year, date.month, date.day, 23, 59, 59);
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -492,7 +571,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
               color: const Color(0xFF112D4E),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 100), // padding for bottom nav
+                padding: const EdgeInsets.only(
+                    bottom: 100), // padding for bottom nav
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 24),

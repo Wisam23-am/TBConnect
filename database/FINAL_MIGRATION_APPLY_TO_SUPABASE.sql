@@ -1,13 +1,25 @@
 -- ============================================================
--- TBConnect - Date Navigation RPC Updates
--- File: database/05_date_navigation_rpc.sql
+-- TBConnect - FINAL MIGRATION: Medication Window Safety Logic
+-- PASTE THIS ENTIRE SCRIPT INTO SUPABASE SQL EDITOR
+-- ============================================================
+-- Purpose: Fix medication double-dosing vulnerability by enforcing
+-- strict session windows with proper cutoffs
 -- ============================================================
 
--- 1. Hapus fungsi lama untuk mencegah bentrokan (PGRST203)
+-- STEP 1: Ensure late_reason column exists
+ALTER TABLE medication_logs
+ADD COLUMN IF NOT EXISTS late_reason TEXT;
+
+-- STEP 2: Drop old RPC functions to prevent conflicts
 DROP FUNCTION IF EXISTS public.log_medication_taken(UUID, TEXT);
 DROP FUNCTION IF EXISTS public.log_medication_taken(UUID, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.get_today_medication_status(UUID);
 
--- Update log_medication_taken to accept p_reason and p_log_date
+-- STEP 3: Create log_medication_taken with window validation
+-- Window Logic:
+--   Morning: 06:00-09:00 (active) → 09:00-13:00 (late) → 13:00+ (blocked)
+--   Afternoon: 13:00-16:00 (active) → 16:00-18:00 (late) → 18:00+ (blocked)
+--   Evening: 18:00-22:00 (active) → 22:00+ (late) → midnight (blocked)
 CREATE OR REPLACE FUNCTION public.log_medication_taken(
   p_patient_id  UUID,
   p_session     TEXT,
@@ -92,10 +104,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
--- 2. Hapus fungsi lama untuk mencegah bentrokan (PGRST203)
-DROP FUNCTION IF EXISTS public.get_today_medication_status(UUID);
-
--- Update get_today_medication_status to accept p_target_date
+-- STEP 4: Create get_today_medication_status with strict window cutoffs
 CREATE OR REPLACE FUNCTION public.get_today_medication_status(
   p_patient_id UUID,
   p_target_date DATE DEFAULT NULL
@@ -178,3 +187,7 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
+-- END OF MIGRATION
+-- ============================================================
