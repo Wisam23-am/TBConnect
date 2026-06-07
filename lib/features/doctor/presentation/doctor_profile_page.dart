@@ -5,7 +5,7 @@
 // Menampilkan profil dokter dengan desain dari Figma:
 // - Gradient banner + avatar lingkaran overlap
 // - Personal Details, Practice Status, Credentials cards
-// - Tombol Edit Profile & Log Out
+// - Tombol Log Out
 //
 // Mendukung mode [embedded] untuk digunakan di DoctorMainShell.
 // Responsive: menggunakan MediaQuery dan LayoutBuilder.
@@ -826,7 +826,7 @@ class _CredentialItem extends StatelessWidget {
 // ACTION BUTTONS
 // =============================================================================
 
-/// Tombol aksi: Edit Profile (filled) dan Log Out (outlined red).
+/// Tombol aksi: Log Out (outlined red).
 class _ActionButtons extends StatelessWidget {
   final VoidCallback onLogout;
 
@@ -837,31 +837,6 @@ class _ActionButtons extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Edit Profile ──
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2A609C),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(width: 8),
-              Text(
-                'Edit Profile',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.manrope(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  height: 1.56,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
         // ── Log Out ──
         OutlinedButton(
           onPressed: onLogout,
