@@ -3,6 +3,7 @@
 // File: lib/services/patient_service.dart
 // ============================================================
 
+import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PatientDataService {
@@ -86,9 +87,36 @@ class PatientDataService {
   Future<List<Map<String, dynamic>>> getPatientNotifications({
     required String patientId,
   }) async {
-    return await _supabase.rpc('get_patient_notifications', params: {
+    final response = await _supabase.rpc('get_patient_notifications', params: {
       'p_patient_id': patientId,
     });
+
+    if (response == null) {
+      return [];
+    }
+
+    if (response is List) {
+      return response.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    }
+
+    if (response is Map<String, dynamic>) {
+      return [Map<String, dynamic>.from(response)];
+    }
+
+    if (response is String) {
+      try {
+        final decoded = jsonDecode(response);
+        if (decoded is List) {
+          return decoded
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+        }
+      } catch (_) {
+        return [];
+      }
+    }
+
+    return [];
   }
 
   // ----------------------------------------------------------
@@ -118,7 +146,8 @@ class PatientDataService {
     int limit = 10,
   }) async {
     try {
-      final response = await _supabase.rpc('get_patient_weight_history', params: {
+      final response =
+          await _supabase.rpc('get_patient_weight_history', params: {
         'p_patient_id': patientId,
         'p_limit': limit,
       });

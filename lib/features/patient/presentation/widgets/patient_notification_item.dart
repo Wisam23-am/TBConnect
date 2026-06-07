@@ -104,7 +104,7 @@ class PatientNotificationItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    notification['message'] ?? '',
+                    _notificationBody(notification),
                     style: GoogleFonts.manrope(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
@@ -119,6 +119,17 @@ class PatientNotificationItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _notificationBody(Map<String, dynamic> notification) {
+    final message = notification['message']?.toString().trim();
+    final body = notification['body']?.toString().trim();
+    final payload = notification['payload']?.toString().trim();
+
+    if (message?.isNotEmpty == true) return message!;
+    if (body?.isNotEmpty == true) return body!;
+    if (payload?.isNotEmpty == true) return payload!;
+    return '';
   }
 
   String _formatTimeAgo(dynamic createdAt) {
@@ -141,4 +152,3 @@ class PatientNotificationItem extends StatelessWidget {
     }
   }
 }
-
