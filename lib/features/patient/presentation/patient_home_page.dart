@@ -123,6 +123,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
       String patientId, int daysOffset) async {
     final now = DateTime.now();
     final targetDate = now.add(Duration(days: daysOffset));
+    final targetDay =
+        DateTime(targetDate.year, targetDate.month, targetDate.day);
 
     final medResult = await _patientService.getTodayMedications(
       patientId: patientId,
@@ -131,10 +133,8 @@ class _PatientHomePageState extends State<PatientHomePage> {
 
     final logs = List<Map<String, dynamic>>.from(medResult['sessions'] ?? []);
 
-    // Map DB logs to UI slots and normalize today-specific status thresholds.
-    final isToday = targetDate.year == now.year &&
-        targetDate.month == now.month &&
-        targetDate.day == now.day;
+    // Map DB logs to UI slots and normalize status thresholds for today's and past reminder history.
+    final today = DateTime(now.year, now.month, now.day);
 
     List<MedicationSlot> slots = [];
     for (var s in logs) {
@@ -154,12 +154,14 @@ class _PatientHomePageState extends State<PatientHomePage> {
         status = MedicationStatus.locked;
 
       final lateReason = s['late_reason'] as String?;
-      if (isToday && status != MedicationStatus.completed) {
-        status = _resolveTodayMedicationStatus(
+      if (status != MedicationStatus.completed) {
+        status = _resolveMedicationStatusForDate(
           session: session,
           rawStatus: status,
           lateReason: lateReason,
           now: now,
+          targetDate: targetDay,
+          today: today,
         );
       }
 
@@ -251,30 +253,43 @@ class _PatientHomePageState extends State<PatientHomePage> {
 
   MedicationStatus _calculateStatusForToday(String session) {
     final now = DateTime.now();
-    return _resolveTodayMedicationStatus(
+    final today = DateTime(now.year, now.month, now.day);
+    return _resolveMedicationStatusForDate(
       session: session,
       rawStatus: MedicationStatus.locked,
       lateReason: null,
       now: now,
+      targetDate: today,
+      today: today,
     );
   }
 
-  MedicationStatus _resolveTodayMedicationStatus({
+  MedicationStatus _resolveMedicationStatusForDate({
     required String session,
     required MedicationStatus rawStatus,
     required String? lateReason,
     required DateTime now,
+    required DateTime targetDate,
+    required DateTime today,
   }) {
     // Keep completed state exact.
     if (rawStatus == MedicationStatus.completed)
       return MedicationStatus.completed;
+
     // If server already knows the slot is truly late with a recorded reason,
     // preserve the yellow late state.
     if (rawStatus == MedicationStatus.late &&
         lateReason != null &&
         lateReason.isNotEmpty) return MedicationStatus.late;
 
-    final targetDate = DateTime(now.year, now.month, now.day);
+    if (targetDate.isAfter(today)) {
+      return MedicationStatus.locked;
+    }
+
+    if (targetDate.isBefore(today)) {
+      return MedicationStatus.lateLocked;
+    }
+
     final start = _sessionStart(targetDate, session);
     final end = _sessionEnd(targetDate, session);
     final nextStart = _nextSessionStart(targetDate, session);
@@ -288,10 +303,10 @@ class _PatientHomePageState extends State<PatientHomePage> {
     }
 
     if (now.isBefore(nextStart)) {
-      return MedicationStatus.missed;
+      return MedicationStatus.late;
     }
 
-    return MedicationStatus.locked;
+    return MedicationStatus.lateLocked;
   }
 
   DateTime _sessionStart(DateTime date, String session) {
